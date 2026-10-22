@@ -59,7 +59,7 @@ Visit [http://localhost:3000](http://localhost:3000) in your browser.
 - Features 10 foundational concepts: `Class`, `Object`, `Constructor`, `Encapsulation`, `Inheritance`, `Polymorphism`, `Method Overriding`, `Abstract Class`, `Interface`, and `Composition`.
 - Derived from a realistic CS 108 lecture note document (`src/data/demoData.ts`).
 - Every single concept contains a verified, verbatim quotation matching the source text.
-- Includes a 5-question grounded diagnostic quiz with exact paragraph citations.
+- Includes a 5-question grounded diagnostic quiz with exact paragraph citations, a self-reported confidence check, and a targeted revision path.
 
 ### 2. Generative Custom Note Processing (Requires `GEMINI_API_KEY`)
 - **Input Methods**: Pasted text or uploaded text-based PDF.
@@ -78,7 +78,7 @@ The Java OOP sample map is the reliable, offline-first demo path: it does not re
 2. **Play the 3D tour** to fly across the concepts in sequence. Pause, resume, skip between concepts, and turn voice narration on or off. The tour finishes at the last concept and can be replayed.
 3. **Inspect Inheritance** on the map to show its explanation, Java example, verified source excerpt (`Page 2, ¶1`), and directional links to related concepts.
 4. **Open the source notes** from the concept details to show the cited paragraph in context.
-5. **Take the five-question diagnostic quiz** and submit it to see the answer breakdown and suggested revision path. Missed concepts are highlighted on the map.
+5. **Take the five-question diagnostic quiz** and rate your confidence on each answer. The result shows the answer breakdown, a confidence reflection, and a suggested revision path; missed concepts are highlighted on the map.
 
 Custom map generation from pasted notes or text-based PDFs requires `GEMINI_API_KEY` and a working provider connection. If that is unavailable during a presentation, use the sample map; it remains fully interactive.
 

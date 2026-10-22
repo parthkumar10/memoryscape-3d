@@ -15,6 +15,14 @@ import {
 import { QuizQuestion, Concept } from '../../types';
 import { evaluateQuizSubmission } from '../../utils/citationVerifier';
 
+type ConfidenceLevel = 'guessing' | 'unsure' | 'confident';
+
+const CONFIDENCE_OPTIONS: { value: ConfidenceLevel; label: string }[] = [
+  { value: 'guessing', label: 'Just guessing' },
+  { value: 'unsure', label: 'Somewhat sure' },
+  { value: 'confident', label: 'Confident' },
+];
+
 interface QuizModalProps {
   quiz: QuizQuestion[];
   allConcepts: Concept[];
@@ -34,6 +42,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({
 }) => {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
+  const [confidenceLevels, setConfidenceLevels] = useState<Record<string, ConfidenceLevel>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [expandedExplanation, setExpandedExplanation] = useState<string | null>(null);
 
@@ -47,7 +56,19 @@ export const QuizModal: React.FC<QuizModalProps> = ({
     }));
   };
 
-  const isComplete = Object.keys(selectedAnswers).length === quiz.length;
+  const handleSelectConfidence = (confidence: ConfidenceLevel) => {
+    if (isSubmitted) return;
+    setConfidenceLevels((prev) => ({
+      ...prev,
+      [currentQ.id]: confidence,
+    }));
+  };
+
+  const isComplete =
+    quiz.length > 0 &&
+    quiz.every((question) =>
+      selectedAnswers[question.id] !== undefined && confidenceLevels[question.id] !== undefined
+    );
 
   const handleSubmit = () => {
     setIsSubmitted(true);
@@ -57,6 +78,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({
 
   const handleReset = () => {
     setSelectedAnswers({});
+    setConfidenceLevels({});
     setIsSubmitted(false);
     setCurrentIdx(0);
     onApplyRevisionHighlights([]);
@@ -64,6 +86,18 @@ export const QuizModal: React.FC<QuizModalProps> = ({
 
   const result = isSubmitted
     ? evaluateQuizSubmission(quiz, selectedAnswers, allConcepts)
+    : null;
+  const confidenceReflection = isSubmitted
+    ? quiz.reduce(
+        (reflection, question) => {
+          const isCorrect = selectedAnswers[question.id] === question.correctAnswerIndex;
+          const confidence = confidenceLevels[question.id];
+          if (!isCorrect && confidence === 'confident') reflection.confidentMisses += 1;
+          if (isCorrect && confidence === 'guessing') reflection.correctGuesses += 1;
+          return reflection;
+        },
+        { confidentMisses: 0, correctGuesses: 0 }
+      )
     : null;
 
   return (
@@ -156,6 +190,32 @@ export const QuizModal: React.FC<QuizModalProps> = ({
                 </div>
               </div>
 
+              <fieldset className="space-y-2.5 pt-1">
+                <legend className="text-xs font-semibold text-slate-300">
+                  How sure are you? <span className="font-normal text-slate-500">Choose before moving on; this won’t affect your score</span>
+                </legend>
+                <div className="grid grid-cols-3 gap-2">
+                  {CONFIDENCE_OPTIONS.map((option) => {
+                    const isSelected = confidenceLevels[currentQ.id] === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        aria-pressed={isSelected}
+                        onClick={() => handleSelectConfidence(option.value)}
+                        className={`px-2 py-2.5 rounded-lg border text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 ${
+                          isSelected
+                            ? 'bg-violet-500/15 border-violet-400 text-violet-200'
+                            : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-600 hover:text-slate-200'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </fieldset>
+
               {/* Navigation Bar */}
               <div className="flex items-center justify-between pt-4 border-t border-slate-800/80 font-sans">
                 <button
@@ -172,7 +232,10 @@ export const QuizModal: React.FC<QuizModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setCurrentIdx((prev) => Math.min(quiz.length - 1, prev + 1))}
-                    disabled={selectedAnswers[currentQ.id] === undefined}
+                    disabled={
+                      selectedAnswers[currentQ.id] === undefined ||
+                      confidenceLevels[currentQ.id] === undefined
+                    }
                     className="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:opacity-40 text-xs font-semibold text-slate-950 flex items-center gap-1.5 transition-colors"
                   >
                     <span>Next</span>
@@ -186,7 +249,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({
                     className="px-5 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-xs font-semibold text-slate-950 flex items-center gap-1.5 transition-colors shadow-md"
                   >
                     <Check className="w-4 h-4" />
-                    <span>Submit & View Revision Path</span>
+                    <span>Submit & View Learning Review</span>
                   </button>
                 )}
               </div>
@@ -207,10 +270,10 @@ export const QuizModal: React.FC<QuizModalProps> = ({
                   </div>
                   <h3 className="text-sm font-semibold text-slate-100 mt-1">
                     {result?.score === 5
-                      ? 'Exceptional mastery across all core concepts!'
+                      ? 'All five answers correct on this check.'
                       : result && result.score >= 3
-                      ? 'Solid conceptual grasp with targeted areas for review.'
-                      : 'Key foundational relationships need closer reinforcement.'}
+                      ? 'Good progress, with specific areas worth reviewing.'
+                      : 'Several concepts may benefit from another review.'}
                   </h3>
                   <p className="text-xs text-slate-400 mt-1">
                     Revision Signal: Weak areas are now highlighted on the 3D map for targeted study.
@@ -240,6 +303,27 @@ export const QuizModal: React.FC<QuizModalProps> = ({
                   </button>
                 </div>
               </div>
+
+              {confidenceReflection && (
+                <section
+                  aria-label="Confidence reflection"
+                  className="p-4 rounded-xl bg-violet-950/20 border border-violet-500/25 space-y-2"
+                >
+                  <h4 className="text-xs font-semibold text-violet-200">
+                    Confidence reflection <span className="font-normal text-violet-300/70">· self-reported, not part of your score</span>
+                  </h4>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    {confidenceReflection.confidentMisses > 0
+                      ? `${confidenceReflection.confidentMisses} confident answer${confidenceReflection.confidentMisses === 1 ? '' : 's'} missed: revisit those explanations and sources.`
+                      : confidenceReflection.correctGuesses > 0
+                      ? `${confidenceReflection.correctGuesses} correct guess${confidenceReflection.correctGuesses === 1 ? '' : 'es'}: review those topics to build confidence.`
+                      : 'No confident misses or correct guesses were flagged in this short check. Use the question feedback to guide your next review.'}
+                    {confidenceReflection.confidentMisses > 0 && confidenceReflection.correctGuesses > 0
+                      ? ` You also got ${confidenceReflection.correctGuesses} answer${confidenceReflection.correctGuesses === 1 ? '' : 's'} right while guessing; review those to build confidence.`
+                      : ''}
+                  </p>
+                </section>
+              )}
 
               {/* Personalized Revision Path */}
               {result && result.revisionPath.length > 0 && (
@@ -329,6 +413,10 @@ export const QuizModal: React.FC<QuizModalProps> = ({
                             {q.sourceReference}
                           </span>
                         </div>
+
+                        <p className="text-[11px] text-violet-300">
+                          Confidence: {CONFIDENCE_OPTIONS.find((option) => option.value === confidenceLevels[q.id])?.label || 'Not recorded'}
+                        </p>
 
                         {!isCorrect && (
                           <div className="text-xs text-emerald-300 font-sans bg-emerald-950/30 p-2.5 rounded-lg border border-emerald-500/20">
