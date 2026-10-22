@@ -472,7 +472,7 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
         roundRect(8, 8, 368, 80, 20);
 
         // Text - capped, clear typography
-        ctx.font = 'bold 26px "Plus Jakarta Sans", system-ui, sans-serif';
+        ctx.font = '600 28px "Plus Jakarta Sans", system-ui, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         if (heatmapStatus === 'mastered') {
@@ -491,7 +491,7 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
       texture.colorSpace = THREE.SRGBColorSpace;
       const spriteMaterial = new THREE.SpriteMaterial({ map: texture, depthTest: false });
       const sprite = new THREE.Sprite(spriteMaterial);
-      sprite.scale.set(2.2, 0.58, 1);
+      sprite.scale.set(2.4, 0.64, 1);
       return sprite;
     };
 
@@ -1325,7 +1325,7 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
 
       {/* Hover tooltip */}
       {hoveredConceptTitle && (
-        <div className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl bg-slate-900/90 border border-cyan-500/40 text-cyan-200 text-xs font-mono backdrop-blur-md shadow-lg flex items-center gap-2 z-20">
+        <div className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-slate-200 text-sm font-sans backdrop-blur-md shadow-lg flex items-center gap-2 z-20">
           <span className="w-2 h-2 rounded-full bg-cyan-400" />
           <span>Click to explore room: <strong>{hoveredConceptTitle}</strong></span>
         </div>

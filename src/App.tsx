@@ -232,7 +232,7 @@ export default function App() {
         <main className="flex-1 relative overflow-hidden bg-[#070b14]">
           {/* Guided 5-Step Demo Walkthrough Bar */}
           {!isDemoBarDismissed && (
-            <div className="absolute top-18 left-0 right-0 z-30 pointer-events-none flex justify-center">
+            <div className="absolute top-28 left-0 right-0 z-30 pointer-events-none flex justify-center">
               <DemoWalkthroughBar
                 currentStep={demoStep}
                 selectedConceptTitle={selectedConcept?.title}
