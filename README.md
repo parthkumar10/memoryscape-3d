@@ -70,28 +70,17 @@ Visit [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 🧭 Complete Demo Walkthrough
+## 🧭 Hackathon Demo Walkthrough
 
-1. **Launch App**: Open the application. An onboarding modal offers **"Explore Java OOP Demo"** or **"Add Your Notes"**.
-2. **Select "Inheritance"**:
-   - In the 3D map or sidebar, click **Inheritance**.
-   - The 3D camera smoothly glides into the Inheritance room.
-   - The right inspector panel opens, displaying:
-     - The brief explanation
-     - The beginner-friendly Java code example (`SavingsAccount extends BankAccount`)
-     - The exact source quotation: *"Inheritance is the mechanism by which a new subclass adopts the non-private attributes..."*
-     - The citation location: `Page 2, ¶1`
-     - The verification pill (`✓ Grounding Verified: Excerpt matched verbatim in source notes`)
-     - Directional connections: `extends Class`, `enables Method Overriding`, and `alternative to Composition`.
-3. **Open Source Notes**: Click **"Read Full Context"** to open the complete course notes modal, which automatically highlights `Page 2, ¶1`.
-4. **Take the Diagnostic Quiz**:
-   - Click the **"Quiz (5 Qs)"** button in the top bar.
-   - Answer the 5 questions testing inheritance, overriding, encapsulation, interfaces, and composition.
-5. **Submit & Review Revision Highlights**:
-   - Click **"Submit & Analyze Gaps"**.
-   - See your score and the explanatory breakdown with paragraph citations.
-   - If any questions were missed, those concepts are flagged on the 3D map with red warning beacons and listed in the **Suggested Revision Priority Path**.
-   - Click any flagged concept in the revision path to inspect it directly.
+The Java OOP sample map is the reliable, offline-first demo path: it does not require a Gemini API key or network access for map exploration, citations, the cinematic 3D tour, or the diagnostic quiz. If a custom map is already open, choose **Sample map** in the 3D toolbar to return to the prepared demo.
+
+1. **Start with the sample map** from onboarding, or use **Sample map** if a custom map is open.
+2. **Play the 3D tour** to fly across the concepts in sequence. Pause, resume, skip between concepts, and turn voice narration on or off. The tour finishes at the last concept and can be replayed.
+3. **Inspect Inheritance** on the map to show its explanation, Java example, verified source excerpt (`Page 2, ¶1`), and directional links to related concepts.
+4. **Open the source notes** from the concept details to show the cited paragraph in context.
+5. **Take the five-question diagnostic quiz** and submit it to see the answer breakdown and suggested revision path. Missed concepts are highlighted on the map.
+
+Custom map generation from pasted notes or text-based PDFs requires `GEMINI_API_KEY` and a working provider connection. If that is unavailable during a presentation, use the sample map; it remains fully interactive.
 
 ---
 

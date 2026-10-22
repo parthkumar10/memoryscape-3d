@@ -61,6 +61,7 @@ export default function App() {
   // Guided 5-Step Demo Walkthrough state
   const [demoStep, setDemoStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [isDemoBarDismissed, setIsDemoBarDismissed] = useState(false);
+  const [isCinematicTourActive, setIsCinematicTourActive] = useState(false);
 
   const [hasApiKey, setHasApiKey] = useState(false);
 
@@ -84,6 +85,12 @@ export default function App() {
         setHasApiKey(false);
       });
   }, []);
+
+  useEffect(() => {
+    if (viewMode !== '3d') {
+      setIsCinematicTourActive(false);
+    }
+  }, [viewMode]);
 
   const handleSelectConcept = (id: string) => {
     setSelectedConceptId(id);
@@ -168,13 +175,19 @@ export default function App() {
     setSelectedConceptId(newConcept.id);
   };
 
+  const handleLoadDemo = () => {
+    setMap(JAVA_OOP_DEMO_MAP);
+    setSelectedConceptId(null);
+    setDemoStep(1);
+    setIsDemoBarDismissed(false);
+    setResetTrigger((t) => t + 1);
+  };
+
   const handleResetData = () => {
     if (window.confirm('Reset to default Java OOP Demo and clear custom map data?')) {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem('memoryscape_onboarded');
-      setMap(JAVA_OOP_DEMO_MAP);
-      setSelectedConceptId('inheritance');
-      setResetTrigger((t) => t + 1);
+      handleLoadDemo();
     }
   };
 
@@ -201,11 +214,7 @@ export default function App() {
           onOpenQuiz={handleOpenQuiz}
           onOpenSourceNotes={() => handleOpenSourceNotes()}
           onResetData={handleResetData}
-          onLoadDemo={() => {
-            setMap(JAVA_OOP_DEMO_MAP);
-            setSelectedConceptId(null);
-            setResetTrigger((t) => t + 1);
-          }}
+          onLoadDemo={handleLoadDemo}
           hasApiKey={hasApiKey}
         />
       )}
@@ -231,7 +240,7 @@ export default function App() {
         {/* Central Map Canvas Area */}
         <main className="flex-1 relative overflow-hidden bg-[#070b14]">
           {/* Guided 5-Step Demo Walkthrough Bar */}
-          {!isDemoBarDismissed && (
+          {!isDemoBarDismissed && !isCinematicTourActive && (
             <div className="absolute top-28 left-0 right-0 z-30 pointer-events-none flex justify-center">
               <DemoWalkthroughBar
                 currentStep={demoStep}
@@ -257,6 +266,9 @@ export default function App() {
               onOpenUpload={() => setIsUploadOpen(true)}
               onOpenCheatSheet={() => setIsCheatSheetOpen(true)}
               onOpenAddIsland={() => setIsAddIslandOpen(true)}
+              onLoadDemo={handleLoadDemo}
+              isDemoMap={map.sourceType === 'demo'}
+              onTourActiveChange={setIsCinematicTourActive}
               onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
               isSidebarOpen={isSidebarOpen}
               viewMode={viewMode}
@@ -318,7 +330,7 @@ export default function App() {
             <div className="space-y-2.5 text-xs text-slate-300">
               <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center gap-3">
                 <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
-                <span>Explore connected concepts on an interactive 3D map</span>
+                <span>Watch a cinematic 3D tour, then explore concepts yourself</span>
               </div>
               <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center gap-3">
                 <CheckCircle2 className="w-4 h-4 text-violet-400 shrink-0" />
@@ -333,10 +345,9 @@ export default function App() {
             <div className="pt-2 flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => {
+                  handleLoadDemo();
                   setShowWelcomeBanner(false);
                   localStorage.setItem('memoryscape_onboarded', 'true');
-                  setSelectedConceptId('inheritance');
-                  setDemoStep(2);
                 }}
                 className="flex-1 py-3 px-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-sm rounded-xl transition-all shadow-md shadow-cyan-500/20 flex items-center justify-center gap-2 active:scale-98"
               >

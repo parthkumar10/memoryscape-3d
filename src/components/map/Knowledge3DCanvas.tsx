@@ -56,6 +56,9 @@ interface Knowledge3DCanvasProps {
   onOpenUpload?: () => void;
   onOpenCheatSheet?: () => void;
   onOpenAddIsland?: () => void;
+  onLoadDemo?: () => void;
+  isDemoMap?: boolean;
+  onTourActiveChange?: (active: boolean) => void;
   onToggleSidebar?: () => void;
   isSidebarOpen?: boolean;
   viewMode?: '3d' | '2d';
@@ -73,6 +76,9 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
   onOpenUpload,
   onOpenCheatSheet,
   onOpenAddIsland,
+  onLoadDemo,
+  isDemoMap = true,
+  onTourActiveChange,
   onToggleSidebar,
   isSidebarOpen = false,
   viewMode = '3d',
@@ -108,12 +114,14 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
   // Feature 1: Procedural Audio & Voice Narrator state
   const [isMuted, setIsMuted] = useState(() => sfx.isMuted());
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(() => narrator.isEnabled());
+  const isNarrationActive = isVoiceEnabled && narrator.isAvailable() && !isMuted;
 
   // Feature 2: Cinematic 3D Tour state
   const [isTourActive, setIsTourActive] = useState(false);
   const [tourIndex, setTourIndex] = useState(0);
   const [isTourPaused, setIsTourPaused] = useState(false);
   const [tourProgress, setTourProgress] = useState(0);
+  const [isTourCompleted, setIsTourCompleted] = useState(false);
 
   // Feature 3: Retention & Mastery Heatmap state
   const [isHeatmapActive, setIsHeatmapActive] = useState(false);
@@ -144,11 +152,11 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
       isTransitioningRef.current = true;
       sfx.playFlightWhoosh();
       sfx.playTourStep();
-      if (!isMuted && isVoiceEnabled) {
+      if (isNarrationActive) {
         narrator.speak(`${target.title}. ${target.briefExplanation}`);
       }
     }
-  }, [isTourActive, tourIndex, concepts, isMuted, isVoiceEnabled]);
+  }, [isTourActive, tourIndex, concepts, isNarrationActive]);
 
   // Sync Voice Narrator pause/resume with Tour pause state
   useEffect(() => {
@@ -163,20 +171,46 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
     }
   }, [isTourPaused, isTourActive]);
 
-  // Handle Tour Progress timer
+  // Give spoken explanations enough time to finish before flying to the next concept.
   useEffect(() => {
-    if (!isTourActive || isTourPaused || concepts.length === 0) return;
+    if (!isTourActive || isTourPaused || concepts.length === 0 || !concepts[tourIndex]) return;
+    const concept = concepts[tourIndex];
+    const wordCount = `${concept.title} ${concept.briefExplanation}`.trim().split(/\s+/).length;
+    const durationMs = isNarrationActive
+      ? Math.min(16000, Math.max(7500, wordCount * 330 + 2500))
+      : 6500;
     const interval = setInterval(() => {
-      setTourProgress((prev) => {
-        if (prev >= 100) {
-          setTourIndex((idx) => (idx + 1) % concepts.length);
-          return 0;
-        }
-        return prev + 2.2; // advances in ~4.5 seconds
-      });
+      setTourProgress((prev) => Math.min(100, prev + (10000 / durationMs)));
     }, 100);
     return () => clearInterval(interval);
-  }, [isTourActive, isTourPaused, concepts.length]);
+  }, [isTourActive, isTourPaused, tourIndex, concepts, isNarrationActive]);
+
+  useEffect(() => {
+    if (!isTourActive || tourProgress < 100) return;
+
+    if (tourIndex >= concepts.length - 1) {
+      setIsTourActive(false);
+      onTourActiveChange?.(false);
+      setIsTourPaused(false);
+      setIsTourCompleted(true);
+      setTourProgress(0);
+      setNavFeedbackMessage('3D tour complete');
+      setTimeout(() => setNavFeedbackMessage(null), 2500);
+      return;
+    }
+
+    setTourIndex((index) => index + 1);
+    setTourProgress(0);
+  }, [isTourActive, tourProgress, tourIndex, concepts.length, onTourActiveChange]);
+
+  useEffect(() => {
+    setIsTourActive(false);
+    onTourActiveChange?.(false);
+    setIsTourPaused(false);
+    setTourIndex(0);
+    setTourProgress(0);
+    setIsTourCompleted(false);
+  }, [mapId, onTourActiveChange]);
 
   // Clean up speech synthesis on component unmount
   useEffect(() => {
@@ -230,6 +264,24 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
       (r) => r.sourceId === selectedConceptId || r.targetId === selectedConceptId
     ).length;
   }, [relationships, selectedConceptId]);
+
+  const verifiedConceptCount = useMemo(
+    () => concepts.filter((concept) => concept.isVerified).length,
+    [concepts]
+  );
+  const sourcesVerifiedLabel = concepts.length
+    ? `${verifiedConceptCount}/${concepts.length} sources verified`
+    : 'No concepts yet';
+  const citationStatusColors = !concepts.length
+    ? 'bg-slate-900/90 border-slate-800 text-slate-400'
+    : verifiedConceptCount === concepts.length
+      ? 'bg-emerald-950/60 border-emerald-500/30 text-emerald-300'
+      : 'bg-amber-950/60 border-amber-500/30 text-amber-300';
+  const citationDotColor = !concepts.length
+    ? 'bg-slate-500'
+    : verifiedConceptCount === concepts.length
+      ? 'bg-emerald-400'
+      : 'bg-amber-400';
 
   // Camera Bookmarks state
   const [isBookmarksOpen, setIsBookmarksOpen] = useState(false);
@@ -1310,11 +1362,23 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
 
   if (!webGlSupported) {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center text-slate-300">
-        <p className="font-semibold text-lg text-amber-400 mb-2">3D Acceleration Not Available</p>
-        <p className="text-sm max-w-md text-slate-400">
-          Your browser or display environment does not support WebGL 3D rendering. Please switch to the 2D Concept List view using the toggle above.
-        </p>
+      <div className="w-full h-full flex flex-col items-center justify-center gap-4 p-8 text-center text-slate-300">
+        <div>
+          <p className="font-semibold text-lg text-slate-100 mb-2">3D view is not available here</p>
+          <p className="text-sm max-w-md text-slate-400">
+            Your concepts, citations, and revision tools are still available in the accessible 2D view.
+          </p>
+        </div>
+        {onViewModeChange && (
+          <button
+            type="button"
+            onClick={() => onViewModeChange('2d')}
+            className="px-4 py-2.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 text-sm font-semibold flex items-center gap-2 transition-colors"
+          >
+            <GitFork className="w-4 h-4" />
+            Open 2D concept list
+          </button>
+        )}
       </div>
     );
   }
@@ -1425,39 +1489,6 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
             <span>Mastery Heatmap</span>
           </button>
 
-          {/* Guided Audio Tour */}
-          <button
-            onClick={() => {
-              setIsTourActive((prev) => {
-                const next = !prev;
-                if (next) {
-                  setTourIndex(0);
-                  setTourProgress(0);
-                  setIsTourPaused(false);
-                  sfx.playSuccessChime();
-                  setNavFeedbackMessage('Starting Audio Tour');
-                } else {
-                  setNavFeedbackMessage('Audio Tour Ended');
-                }
-                setTimeout(() => setNavFeedbackMessage(null), 2500);
-                return next;
-              });
-            }}
-            className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 text-xs font-medium ${
-              isTourActive
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
-                : 'text-slate-300 hover:text-slate-100 hover:bg-slate-900 border border-transparent'
-            }`}
-            title="Start guided audio walkthrough of concept structures"
-          >
-            <Play
-              className={`w-3.5 h-3.5 ${
-                isTourActive ? 'text-cyan-400 fill-cyan-400' : 'text-cyan-400'
-              }`}
-            />
-            <span>Audio Tour</span>
-          </button>
-
           {/* Revision Sheet / Cheat Sheet Export */}
           {onOpenCheatSheet && (
             <button
@@ -1473,6 +1504,52 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
 
         {/* Right Action: Upload Notes & Take Diagnostic Quiz */}
         <div className="pointer-events-auto flex items-center gap-2 font-sans">
+          {!isDemoMap && onLoadDemo && (
+            <button
+              onClick={onLoadDemo}
+              className="px-3 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-slate-200 hover:text-cyan-200 text-xs font-medium flex items-center gap-1.5 transition-all"
+              title="Switch to the offline Java sample map"
+            >
+              <Layers className="w-4 h-4 text-cyan-300" />
+              <span className="hidden sm:inline">Sample map</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => {
+              if (isTourActive) {
+                setIsTourActive(false);
+                onTourActiveChange?.(false);
+                setTourProgress(0);
+                return;
+              }
+              setTourIndex(0);
+              setTourProgress(0);
+              setIsTourPaused(false);
+              setIsTourCompleted(false);
+              setIsTourActive(true);
+              onTourActiveChange?.(true);
+              sfx.playSuccessChime();
+            }}
+            className={`px-3 py-2 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 ${
+              isTourActive
+                ? 'bg-cyan-500/15 border-cyan-500/40 text-cyan-200'
+                : 'bg-slate-900/90 hover:bg-slate-800 border-slate-700/80 text-slate-200 hover:text-cyan-200'
+            }`}
+            title={isTourActive ? 'Stop the 3D tour' : isTourCompleted ? 'Replay the 3D tour' : 'Play the cinematic 3D tour'}
+            aria-label={isTourActive ? 'Stop 3D tour' : isTourCompleted ? 'Replay 3D tour' : 'Play cinematic 3D tour'}
+            aria-pressed={isTourActive}
+          >
+            {isTourActive ? (
+              <Pause className="w-4 h-4 text-cyan-300" />
+            ) : (
+              <Play className="w-4 h-4 text-cyan-300 fill-cyan-300" />
+            )}
+            <span className="hidden sm:inline">
+              {isTourActive ? 'Stop tour' : isTourCompleted ? 'Replay tour' : '3D tour'}
+            </span>
+          </button>
+
           {onOpenUpload && (
             <button
               onClick={onOpenUpload}
@@ -1503,7 +1580,7 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
           {/* Concepts Count */}
           <div
             className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-900/90"
-            title={`${concepts.length} Concept structures in map`}
+            title={`${verifiedConceptCount} of ${concepts.length} concept explanations have verified source citations`}
           >
             <Layers className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
             <span className="font-semibold text-slate-100">{concepts.length}</span>
@@ -1525,11 +1602,11 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
 
           {/* Verified Citations Badge */}
           <div
-            className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 text-[11px]"
-            title="All explanations grounded with citations from course notes"
+            className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[11px] ${citationStatusColors}`}
+            title={`${verifiedConceptCount} of ${concepts.length} concept explanations have verified source citations`}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            <span>Grounded in Notes</span>
+            <span className={`w-1.5 h-1.5 rounded-full ${citationDotColor}`} />
+            <span>{sourcesVerifiedLabel}</span>
           </div>
         </div>
 
@@ -1943,16 +2020,16 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
 
       {/* Guided Audio Walkthrough Controller */}
       {isTourActive && concepts[tourIndex] && (
-        <div className="pointer-events-auto absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-lg mx-auto px-4 z-40 animate-in fade-in slide-in-from-bottom-3 font-sans">
-          <div className="bg-slate-950/95 border border-slate-700/80 backdrop-blur-xl rounded-2xl p-4 shadow-2xl space-y-3">
+        <div className="pointer-events-auto absolute bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 w-full max-w-xl mx-auto px-3 sm:px-4 z-40 animate-in fade-in slide-in-from-bottom-3 font-sans">
+          <div className="bg-slate-950/95 border border-cyan-500/25 backdrop-blur-xl rounded-2xl p-3.5 sm:p-4 shadow-2xl shadow-black/30 space-y-3">
             {/* Top Header & Progress */}
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2 min-w-0">
                 <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-                <span className="text-cyan-300 font-semibold text-xs">
-                  Audio Walkthrough · Concept {tourIndex + 1} of {concepts.length}
+                <span className="text-cyan-300 font-semibold text-xs sm:text-sm truncate">
+                  Cinematic 3D Tour <span className="text-slate-500">·</span> {tourIndex + 1} of {concepts.length}
                 </span>
-                <span className="px-2 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-slate-300 text-[11px]">
+                <span className="hidden sm:inline px-2 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-slate-300 text-[11px]">
                   {concepts[tourIndex].cluster}
                 </span>
               </div>
@@ -1960,10 +2037,12 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
               <button
                 onClick={() => {
                   setIsTourActive(false);
+                  onTourActiveChange?.(false);
                   setTourProgress(0);
                 }}
                 className="p-1 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors"
-                title="Exit Walkthrough"
+                title="Exit 3D tour"
+                aria-label="Exit 3D tour"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1971,16 +2050,23 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
 
             {/* Concept Title & Brief Explanation */}
             <div>
-              <h3 className="text-sm font-bold text-slate-100 font-sans">
+              <h3 className="text-base sm:text-lg font-semibold text-slate-100 font-sans">
                 {concepts[tourIndex].title}
               </h3>
-              <p className="text-xs text-slate-300 line-clamp-2 mt-1 leading-relaxed font-sans font-light">
+              <p className="text-sm text-slate-300 line-clamp-2 mt-1 leading-relaxed font-sans">
                 {concepts[tourIndex].briefExplanation}
               </p>
             </div>
 
             {/* Animated Progress Bar */}
-            <div className="w-full h-1 bg-slate-900 rounded-full overflow-hidden">
+            <div
+              className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden"
+              role="progressbar"
+              aria-label="Current tour stop progress"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(tourProgress)}
+            >
               <div
                 className="h-full bg-gradient-to-r from-cyan-500 to-violet-500 transition-all duration-100"
                 style={{ width: `${tourProgress}%` }}
@@ -1988,14 +2074,15 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
             </div>
 
             {/* Navigation Controls & AI Voice Toggle */}
-            <div className="flex items-center justify-between pt-1">
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => {
                     setTourProgress(0);
                     setTourIndex((prev) => (prev - 1 + concepts.length) % concepts.length);
                   }}
-                  className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-850 border border-slate-800 text-slate-300 hover:text-cyan-300 text-xs flex items-center gap-1 transition-colors"
+                  className="px-3 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-cyan-300 text-xs flex items-center gap-1 transition-colors"
+                  aria-label="Previous concept"
                 >
                   <SkipBack className="w-3.5 h-3.5" />
                   <span>Prev</span>
@@ -2003,7 +2090,8 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
 
                 <button
                   onClick={() => setIsTourPaused((p) => !p)}
-                  className="px-3.5 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 font-bold text-xs flex items-center gap-1.5 transition-colors"
+                  className="px-3.5 py-2 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 font-semibold text-xs flex items-center gap-1.5 transition-colors"
+                  aria-label={isTourPaused ? 'Resume tour' : 'Pause tour'}
                 >
                   {isTourPaused ? (
                     <>
@@ -2023,7 +2111,8 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
                     setTourProgress(0);
                     setTourIndex((prev) => (prev + 1) % concepts.length);
                   }}
-                  className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-850 border border-slate-800 text-slate-300 hover:text-cyan-300 text-xs flex items-center gap-1 transition-colors"
+                  className="px-3 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-cyan-300 text-xs flex items-center gap-1 transition-colors"
+                  aria-label="Next concept"
                 >
                   <span>Next</span>
                   <SkipForward className="w-3.5 h-3.5" />
@@ -2043,20 +2132,44 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
                     );
                   }
                 }}
-                className={`px-2.5 py-1.5 rounded-lg border text-xs flex items-center gap-1.5 transition-colors ${
-                  isVoiceEnabled
+                disabled={!narrator.isAvailable()}
+                className={`px-3 py-2 rounded-lg border text-xs flex items-center gap-1.5 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                  isNarrationActive
                     ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
-                    : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300'
+                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-300'
                 }`}
-                title={isVoiceEnabled ? 'Disable Voice Guidance' : 'Enable Voice Guidance'}
+                title={
+                  narrator.isAvailable()
+                    ? isMuted
+                      ? 'Voice narration is muted with audio cues'
+                      : isVoiceEnabled
+                      ? 'Turn voice narration off'
+                      : 'Turn voice narration on'
+                    : 'Voice narration is not supported by this browser'
+                }
+                aria-label={
+                  narrator.isAvailable()
+                    ? isMuted
+                      ? 'Voice narration muted with audio cues'
+                      : isVoiceEnabled
+                      ? 'Turn voice narration off'
+                      : 'Turn voice narration on'
+                    : 'Voice narration unavailable'
+                }
               >
-                {isVoiceEnabled ? (
+                {isNarrationActive ? (
                   <Mic className="w-3.5 h-3.5 text-cyan-400" />
                 ) : (
                   <MicOff className="w-3.5 h-3.5" />
                 )}
                 <span className="text-[11px] font-semibold">
-                  {isVoiceEnabled ? 'Voice ON' : 'Voice OFF'}
+                  {!narrator.isAvailable()
+                    ? 'Voice unavailable'
+                    : isMuted
+                      ? 'Voice muted'
+                      : isVoiceEnabled
+                        ? 'Voice on'
+                        : 'Voice off'}
                 </span>
               </button>
             </div>

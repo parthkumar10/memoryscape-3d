@@ -55,38 +55,53 @@ export const NotesInputModal: React.FC<NotesInputModalProps> = ({
 
     setPdfFile(file);
     setErrorMessage(null);
+    setExtractedPdfData(null);
     setIsExtractingPdf(true);
 
     try {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64 = (reader.result as string).split(',')[1];
-        const res = await fetch('/api/extract-pdf', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ base64, filename: file.name }),
-        });
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result !== 'string') {
+            reject(new Error('The selected PDF could not be read.'));
+            return;
+          }
+          const payload = reader.result.split(',')[1];
+          if (!payload) {
+            reject(new Error('The selected PDF could not be read.'));
+            return;
+          }
+          resolve(payload);
+        };
+        reader.onerror = () => reject(reader.error || new Error('Failed to read the selected PDF.'));
+        reader.onabort = () => reject(new Error('Reading the selected PDF was cancelled.'));
+        reader.readAsDataURL(file);
+      });
 
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.error || 'Failed to extract text from PDF');
-        }
+      const res = await fetch('/api/extract-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64, filename: file.name }),
+      });
 
-        setExtractedPdfData({
-          text: data.fullText,
-          pageCount: data.pageCount,
-          isScanned: data.isScanned,
-          warning: data.warning,
-        });
-        if (!customTitle) {
-          setCustomTitle(file.name.replace(/\.pdf$/i, ''));
-        }
-        setIsExtractingPdf(false);
-      };
-      reader.readAsDataURL(file);
-    } catch (err: any) {
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to extract text from PDF');
+      }
+
+      setExtractedPdfData({
+        text: data.fullText,
+        pageCount: data.pageCount,
+        isScanned: data.isScanned,
+        warning: data.warning,
+      });
+      if (!customTitle) {
+        setCustomTitle(file.name.replace(/\.pdf$/i, ''));
+      }
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Error processing PDF');
+    } finally {
       setIsExtractingPdf(false);
-      setErrorMessage(err.message || 'Error processing PDF');
     }
   };
 
