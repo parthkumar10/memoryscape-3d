@@ -72,13 +72,14 @@ Visit [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 🧭 Hackathon Demo Walkthrough
 
-The Java OOP sample map is the reliable, offline-first demo path: it does not require a Gemini API key or network access for map exploration, citations, the cinematic 3D tour, or the diagnostic quiz. If a custom map is already open, choose **Sample map** in the 3D toolbar to return to the prepared demo.
+The Java OOP sample map is the reliable, offline-first demo path: it does not require a Gemini API key or network access for map exploration, citations, the cinematic 3D tour, diagnostic quiz, or optional study soundscapes. If a custom map is already open, choose **Sample map** in the 3D toolbar to return to the prepared demo.
 
 1. **Start with the sample map** from onboarding, or use **Sample map** if a custom map is open.
 2. **Play the 3D tour** to fly across the concepts in sequence. Pause, resume, skip between concepts, and turn voice narration on or off. The tour finishes at the last concept and can be replayed.
 3. **Inspect Inheritance** on the map to show its explanation, Java example, verified source excerpt (`Page 2, ¶1`), and directional links to related concepts.
 4. **Open the source notes** from the concept details to show the cited paragraph in context.
 5. **Take the five-question diagnostic quiz** and rate your confidence on each answer. The result shows the answer breakdown, a confidence reflection, and a suggested revision path; missed concepts are highlighted on the map.
+6. **Open Study Sounds** from the 3D toolbar for optional white noise, 40 Hz binaural beats, or an original generated lo-fi instrumental. Playback starts only after the learner presses play; closing the panel keeps audio playing, while **Pause** stops it. Volume and the chosen sound are saved locally. Binaural beats require stereo headphones and are not presented as a proven focus treatment.
 
 Custom map generation from pasted notes or text-based PDFs requires `GEMINI_API_KEY` and a working provider connection. If that is unavailable during a presentation, use the sample map; it remains fully interactive.
 

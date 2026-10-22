@@ -40,10 +40,12 @@ import {
   MicOff,
   Radio,
   Command,
+  Music2,
 } from 'lucide-react';
 import { Concept, Relationship, CameraBookmark } from '../../types';
 import { sfx } from '../../utils/soundEffects';
 import { narrator } from '../../utils/voiceNarrator';
+import { StudySoundsPanel } from './StudySoundsPanel';
 
 interface Knowledge3DCanvasProps {
   concepts: Concept[];
@@ -285,6 +287,7 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
 
   // Camera Bookmarks state
   const [isBookmarksOpen, setIsBookmarksOpen] = useState(false);
+  const [isStudySoundsOpen, setIsStudySoundsOpen] = useState(false);
   const [isCreatingBookmark, setIsCreatingBookmark] = useState(false);
   const [newBookmarkName, setNewBookmarkName] = useState('');
   const [activeBookmarkId, setActiveBookmarkId] = useState<string | null>(null);
@@ -1346,6 +1349,7 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
         handleToggleTopDown();
       } else if (e.key === 'b' || e.key === 'B') {
         e.preventDefault();
+        setIsStudySoundsOpen(false);
         setIsBookmarksOpen((prev) => !prev);
       } else if (/^[1-9]$/.test(e.key)) {
         const idx = parseInt(e.key, 10) - 1;
@@ -1724,7 +1728,10 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
 
         {/* Camera Bookmarks Toggle */}
         <button
-          onClick={() => setIsBookmarksOpen((o) => !o)}
+          onClick={() => {
+            setIsBookmarksOpen((open) => !open);
+            setIsStudySoundsOpen(false);
+          }}
           className={`p-2 rounded-xl active:scale-95 transition-all group relative ${
             isBookmarksOpen
               ? 'text-cyan-300 bg-cyan-950/80 border border-cyan-500/50 shadow-sm'
@@ -1741,6 +1748,27 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
           )}
           <span className="absolute left-full ml-3 px-2 py-1 rounded-md bg-slate-900 border border-slate-700 text-[10px] font-mono text-cyan-300 whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity shadow-xl z-30">
             Bookmarks (B)
+          </span>
+        </button>
+
+        {/* Optional ambient audio for focused study */}
+        <button
+          onClick={() => {
+            setIsStudySoundsOpen((open) => !open);
+            setIsBookmarksOpen(false);
+          }}
+          className={`p-2 rounded-xl active:scale-95 transition-all group relative ${
+            isStudySoundsOpen
+              ? 'text-violet-200 bg-violet-950/80 border border-violet-500/50 shadow-sm'
+              : 'text-slate-300 hover:text-violet-200 hover:bg-slate-800/90'
+          }`}
+          title="Open study sounds"
+          aria-label="Open study sounds"
+          aria-expanded={isStudySoundsOpen}
+        >
+          <Music2 className="w-4 h-4 text-violet-300 group-hover:scale-110 transition-transform" />
+          <span className="absolute left-full ml-3 px-2 py-1 rounded-md bg-slate-900 border border-violet-800/80 text-[10px] font-mono text-violet-200 whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity shadow-xl z-30">
+            Study Sounds
           </span>
         </button>
 
@@ -1993,6 +2021,11 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
           </div>
         </div>
       )}
+
+      <StudySoundsPanel
+        isOpen={isStudySoundsOpen}
+        onClose={() => setIsStudySoundsOpen(false)}
+      />
 
       {/* Interactive Relationship Bridge Hover Inspector */}
       {hoveredBridge && (
