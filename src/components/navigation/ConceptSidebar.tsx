@@ -91,15 +91,15 @@ export const ConceptSidebar: React.FC<ConceptSidebarProps> = ({
         </div>
 
         {/* Cluster Filter Pills */}
-        <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar text-[11px] font-mono">
+        <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs font-sans">
           {clusters.map((cl) => (
             <button
               key={cl}
               onClick={() => setSelectedCluster(cl)}
-              className={`px-2.5 py-1 rounded-md whitespace-nowrap transition-colors capitalize ${
+              className={`px-2.5 py-1 rounded-md whitespace-nowrap transition-colors capitalize text-xs ${
                 selectedCluster === cl
                   ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-semibold'
-                  : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200'
+                  : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200 font-medium'
               }`}
             >
               {cl}
@@ -109,9 +109,9 @@ export const ConceptSidebar: React.FC<ConceptSidebarProps> = ({
       </div>
 
       {/* Concept List */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-1">
+      <div className="flex-1 overflow-y-auto p-2 space-y-1 font-sans">
         {filtered.length === 0 ? (
-          <div className="p-6 text-center text-xs text-slate-500 font-mono">
+          <div className="p-6 text-center text-xs text-slate-400 font-sans">
             No concepts match "{searchQuery}"
           </div>
         ) : (
@@ -153,10 +153,10 @@ export const ConceptSidebar: React.FC<ConceptSidebarProps> = ({
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400 truncate">
+                  <div className="flex items-center gap-2 text-[11px] text-slate-400 truncate font-sans">
                     <span>{concept.cluster}</span>
                     <span>·</span>
-                    <span>{concept.sourceReference}</span>
+                    <span className="font-mono text-[10px]">{concept.sourceReference}</span>
                   </div>
                 </div>
 
@@ -172,10 +172,10 @@ export const ConceptSidebar: React.FC<ConceptSidebarProps> = ({
       </div>
 
       {/* Bottom Sticky Action Footer */}
-      <div className="p-3 border-t border-slate-800/80 bg-slate-950/60 space-y-2 text-xs font-mono">
+      <div className="p-3 border-t border-slate-800/80 bg-slate-950/60 space-y-2 text-xs font-sans">
         {revisionCount > 0 && (
-          <div className="p-2 rounded-lg bg-red-950/30 border border-red-500/30 flex items-center justify-between text-red-300 text-[11px]">
-            <span className="flex items-center gap-1.5">
+          <div className="p-2 rounded-lg bg-red-950/30 border border-red-500/30 flex items-center justify-between text-red-300 text-xs">
+            <span className="flex items-center gap-1.5 font-medium">
               <AlertCircle className="w-3.5 h-3.5 text-red-400" />
               <span>{revisionCount} concept(s) need review</span>
             </span>
@@ -185,20 +185,20 @@ export const ConceptSidebar: React.FC<ConceptSidebarProps> = ({
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={onOpenSourceNotes}
-            className="p-2 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-slate-100 transition-colors flex items-center justify-center gap-1.5"
+            className="p-2 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-slate-100 transition-colors flex items-center justify-center gap-1.5 font-medium text-xs"
             title="Read Source Notes with paragraph anchors"
           >
             <BookOpen className="w-3.5 h-3.5 text-violet-400" />
-            <span className="text-[11px]">Source Notes</span>
+            <span>Source Notes</span>
           </button>
 
           <button
             onClick={onOpenQuiz}
-            className="p-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+            className="p-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-sm text-xs"
             title="Take 5-question grounded diagnostic quiz"
           >
             <HelpCircle className="w-3.5 h-3.5 text-slate-950" />
-            <span className="text-[11px]">Take Quiz</span>
+            <span>Take Quiz</span>
           </button>
         </div>
       </div>

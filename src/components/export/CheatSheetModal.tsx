@@ -65,8 +65,8 @@ export const CheatSheetModal: React.FC<CheatSheetModalProps> = ({
 
   // Markdown representation generator
   const markdownText = useMemo(() => {
-    let md = `# ${map.title} — Exam Revision Cheat Sheet\n`;
-    md += `*Generated from 3D Knowledge Map on ${new Date().toLocaleDateString()}*\n\n`;
+    let md = `# ${map.title} — Study Summary & Revision Sheet\n`;
+    md += `*Generated from Knowledge Map on ${new Date().toLocaleDateString()}*\n\n`;
     md += `> **Readiness Score:** ${readinessScore}% (${masteredCount}/${map.concepts.length} concepts mastered)\n\n`;
 
     md += `## 1. Quick Concept Directory\n\n`;
@@ -110,7 +110,7 @@ export const CheatSheetModal: React.FC<CheatSheetModalProps> = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${map.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}-cheat-sheet.md`;
+    link.download = `${map.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}-study-summary.md`;
     link.click();
     URL.revokeObjectURL(url);
     sfx.playSuccessChime();
@@ -122,7 +122,7 @@ export const CheatSheetModal: React.FC<CheatSheetModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
-      <div className="bg-[#0b1120] border border-cyan-500/40 rounded-2xl w-full max-w-4xl h-[90vh] flex flex-col text-slate-100 shadow-2xl overflow-hidden font-sans">
+      <div className="bg-[#0b1120] border border-slate-700/80 rounded-2xl w-full max-w-4xl h-[90vh] flex flex-col text-slate-100 shadow-2xl overflow-hidden font-sans">
         {/* Header */}
         <div className="p-4 sm:p-5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
@@ -132,14 +132,14 @@ export const CheatSheetModal: React.FC<CheatSheetModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base sm:text-lg font-bold text-slate-100">
-                  Exam Revision Cheat Sheet
+                  Study Summary & Revision Sheet
                 </h2>
                 <span className="px-2 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-500/40 text-[10px] font-mono text-cyan-300">
                   {map.concepts.length} Concepts
                 </span>
               </div>
-              <p className="text-xs text-slate-400 font-mono mt-0.5 truncate max-w-md">
-                {map.title} · Instant Summary & Printable Export
+              <p className="text-xs text-slate-400 mt-0.5 truncate max-w-md">
+                {map.title} · Printable Outline & Markdown Export
               </p>
             </div>
           </div>

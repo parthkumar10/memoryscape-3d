@@ -60,9 +60,9 @@ export const TopBar: React.FC<TopBarProps> = ({
         </div>
 
         {/* Active Map Title Badge */}
-        <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 text-xs font-mono text-slate-300 max-w-sm truncate">
+        <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 text-xs font-sans text-slate-300 max-w-sm truncate">
           <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />
-          <span className="truncate">{map.title}</span>
+          <span className="truncate font-medium">{map.title}</span>
           {map.sourceType === 'demo' ? (
             <span className="ml-1 text-[10px] text-amber-300 bg-amber-950/80 border border-amber-500/40 px-1.5 py-0.5 rounded uppercase font-semibold shrink-0">
               Offline Demo
@@ -78,15 +78,15 @@ export const TopBar: React.FC<TopBarProps> = ({
       {/* Zone 2: View Controls & Quiz */}
       <div className="flex items-center gap-2 shrink-0">
         {/* 3D vs 2D Toggle */}
-        <div className="flex items-center p-0.5 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono">
+        <div className="flex items-center p-0.5 bg-slate-900 border border-slate-800 rounded-lg text-xs font-sans">
           <button
             onClick={() => setViewMode('3d')}
             className={`px-2.5 py-1 rounded-md flex items-center gap-1.5 transition-colors ${
               viewMode === '3d'
                 ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold'
-                : 'text-slate-400 hover:text-slate-200'
+                : 'text-slate-400 hover:text-slate-200 font-medium'
             }`}
-            title="Interactive 3D Knowledge Space"
+            title="Interactive 3D Knowledge Map"
           >
             <Eye className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">3D Map</span>
@@ -96,7 +96,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             className={`px-2.5 py-1 rounded-md flex items-center gap-1.5 transition-colors ${
               viewMode === '2d'
                 ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold'
-                : 'text-slate-400 hover:text-slate-200'
+                : 'text-slate-400 hover:text-slate-200 font-medium'
             }`}
             title="Accessible 2D List Matrix"
           >
@@ -109,8 +109,8 @@ export const TopBar: React.FC<TopBarProps> = ({
         {viewMode === '3d' && (
           <button
             onClick={onResetCamera}
-            className="p-1.5 sm:px-2.5 sm:py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-cyan-300 hover:border-cyan-500/30 text-xs font-mono flex items-center gap-1.5 transition-colors shadow-xs"
-            title="Zoom to Fit — Frame all concept structures (F)"
+            className="p-1.5 sm:px-2.5 sm:py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-cyan-300 hover:border-cyan-500/30 text-xs font-sans font-medium flex items-center gap-1.5 transition-colors shadow-xs"
+            title="Zoom to Fit — Frame all concepts (F)"
           >
             <Maximize2 className="w-3.5 h-3.5 text-cyan-400" />
             <span className="hidden sm:inline">Zoom to Fit</span>
@@ -120,7 +120,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         {/* Take Quiz Trigger */}
         <button
           onClick={onOpenQuiz}
-          className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-sm ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-sans font-semibold flex items-center gap-1.5 transition-all shadow-sm ${
             revisionCount > 0
               ? 'bg-red-500/20 border border-red-500/40 text-red-300 hover:bg-red-500/30'
               : 'bg-slate-900 border border-slate-800 text-cyan-300 hover:border-cyan-500/40 hover:bg-slate-800'
@@ -145,12 +145,12 @@ export const TopBar: React.FC<TopBarProps> = ({
       <div className="flex items-center gap-2 shrink-0">
         <button
           onClick={onOpenUpload}
-          className="px-3.5 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs font-mono flex items-center gap-1.5 transition-colors shadow-sm active:scale-98"
+          className="px-3.5 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-xs font-sans flex items-center gap-1.5 transition-colors shadow-sm active:scale-98"
           title="Paste study notes or upload text-based PDF"
         >
           <Upload className="w-3.5 h-3.5" />
-          <span className="hidden xs:inline">Add Your Notes</span>
-          <span className="xs:hidden">Add</span>
+          <span className="hidden xs:inline">Upload notes</span>
+          <span className="xs:hidden">Upload</span>
         </button>
 
         {/* Reset / Clear Data */}

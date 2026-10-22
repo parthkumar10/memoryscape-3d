@@ -18,7 +18,8 @@ import { SourceNotesModal } from './components/notes/SourceNotesModal';
 import { GeminiChatbot } from './components/chat/GeminiChatbot';
 import { CheatSheetModal } from './components/export/CheatSheetModal';
 import { AddConceptIslandModal } from './components/map/AddConceptIslandModal';
-import { Sparkles, Compass, Upload, CheckCircle2, BookOpen, Layers } from 'lucide-react';
+import { DemoWalkthroughBar } from './components/navigation/DemoWalkthroughBar';
+import { Sparkles, Compass, Upload, CheckCircle2, BookOpen, Layers, ArrowRight } from 'lucide-react';
 
 const STORAGE_KEY = 'memoryscape_current_map';
 
@@ -57,6 +58,10 @@ export default function App() {
     return !localStorage.getItem('memoryscape_onboarded');
   });
 
+  // Guided 5-Step Demo Walkthrough state
+  const [demoStep, setDemoStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [isDemoBarDismissed, setIsDemoBarDismissed] = useState(false);
+
   const [hasApiKey, setHasApiKey] = useState(false);
 
   // Sync to local storage
@@ -82,6 +87,9 @@ export default function App() {
 
   const handleSelectConcept = (id: string) => {
     setSelectedConceptId(id);
+    if (demoStep === 1) {
+      setDemoStep(2);
+    }
   };
 
   const handleApplyRevisionHighlights = (revisionIds: string[]) => {
@@ -100,6 +108,14 @@ export default function App() {
         };
       }),
     }));
+    setDemoStep(5);
+  };
+
+  const handleOpenQuiz = () => {
+    setIsQuizOpen(true);
+    if (demoStep < 4) {
+      setDemoStep(4);
+    }
   };
 
   const handleToggleRevisionStatus = (conceptId: string) => {
@@ -165,6 +181,9 @@ export default function App() {
   const handleOpenSourceNotes = (ref?: string) => {
     setTargetNotesRef(ref || null);
     setIsSourceNotesOpen(true);
+    if (demoStep === 2) {
+      setDemoStep(3);
+    }
   };
 
   const selectedConcept = map.concepts.find((c) => c.id === selectedConceptId) || null;
@@ -179,7 +198,7 @@ export default function App() {
           setViewMode={setViewMode}
           onResetCamera={() => setResetTrigger((t) => t + 1)}
           onOpenUpload={() => setIsUploadOpen(true)}
-          onOpenQuiz={() => setIsQuizOpen(true)}
+          onOpenQuiz={handleOpenQuiz}
           onOpenSourceNotes={() => handleOpenSourceNotes()}
           onResetData={handleResetData}
           onLoadDemo={() => {
@@ -200,7 +219,7 @@ export default function App() {
               map={map}
               selectedConceptId={selectedConceptId}
               onSelectConcept={handleSelectConcept}
-              onOpenQuiz={() => setIsQuizOpen(true)}
+              onOpenQuiz={handleOpenQuiz}
               onOpenSourceNotes={() => handleOpenSourceNotes()}
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
@@ -211,6 +230,21 @@ export default function App() {
 
         {/* Central Map Canvas Area */}
         <main className="flex-1 relative overflow-hidden bg-[#070b14]">
+          {/* Guided 5-Step Demo Walkthrough Bar */}
+          {!isDemoBarDismissed && (
+            <div className="absolute top-18 left-0 right-0 z-30 pointer-events-none flex justify-center">
+              <DemoWalkthroughBar
+                currentStep={demoStep}
+                selectedConceptTitle={selectedConcept?.title}
+                revisionCount={map.concepts.filter((c) => c.needsRevision).length}
+                onOpenSourceNotes={() => handleOpenSourceNotes(selectedConcept?.sourceReference)}
+                onOpenQuiz={handleOpenQuiz}
+                onSelectSampleConcept={() => handleSelectConcept('inheritance')}
+                onDismiss={() => setIsDemoBarDismissed(true)}
+              />
+            </div>
+          )}
+
           {viewMode === '3d' ? (
             <Knowledge3DCanvas
               concepts={map.concepts}
@@ -219,7 +253,7 @@ export default function App() {
               onSelectConcept={handleSelectConcept}
               resetTrigger={resetTrigger}
               mapId={map.id}
-              onOpenQuiz={() => setIsQuizOpen(true)}
+              onOpenQuiz={handleOpenQuiz}
               onOpenUpload={() => setIsUploadOpen(true)}
               onOpenCheatSheet={() => setIsCheatSheetOpen(true)}
               onOpenAddIsland={() => setIsAddIslandOpen(true)}
@@ -257,48 +291,57 @@ export default function App() {
       {/* Onboarding Welcome Modal */}
       {showWelcomeBanner && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#0b1120] border border-cyan-500/40 rounded-2xl w-full max-w-lg p-6 text-slate-100 shadow-2xl space-y-5 animate-in fade-in zoom-in-95">
+          <div className="bg-[#0b1120] border border-slate-700/80 rounded-2xl w-full max-w-lg p-6 sm:p-7 text-slate-100 shadow-2xl space-y-5 animate-in fade-in zoom-in-95">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-violet-500 flex items-center justify-center text-slate-950 font-bold shadow-lg shadow-cyan-500/20">
                 <Compass className="w-5 h-5 text-slate-950" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-slate-100">Welcome to MEMORYSCAPE</h2>
-                <span className="text-xs font-mono text-cyan-400">
-                  Explorable 3D Knowledge Map & Revision System
-                </span>
+                <h1 className="text-xl font-bold text-slate-100 tracking-tight">
+                  MEMORYSCAPE
+                </h1>
+                <p className="text-xs text-cyan-400 font-medium">
+                  Interactive Concept Map & Active Revision
+                </p>
               </div>
             </div>
 
-            <p className="text-xs text-slate-300 leading-relaxed font-light">
-              Transform dense study notes into floating concept islands connected by directional relationships. Trace every explanation back to its source paragraph, and take grounded quizzes to identify gaps before exams.
-            </p>
+            <div className="space-y-2">
+              <h2 className="text-lg font-bold text-slate-100 leading-snug">
+                Turn your notes into a map of what connects—and what to review next.
+              </h2>
+              <p className="text-sm text-slate-300 leading-relaxed font-normal">
+                Explore linked concepts, check explanations against their sources, and take a short quiz to identify knowledge gaps.
+              </p>
+            </div>
 
-            <div className="space-y-2 text-xs font-mono">
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-3">
+            <div className="space-y-2.5 text-xs text-slate-300">
+              <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center gap-3">
                 <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
-                <span>Deterministic Java OOP Demo (Offline · No API Key Required)</span>
+                <span>Explore connected concepts on an interactive 3D map</span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-3">
+              <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center gap-3">
                 <CheckCircle2 className="w-4 h-4 text-violet-400 shrink-0" />
-                <span>Verifiable citations with paragraph references</span>
+                <span>Verify explanations with verbatim source note citations</span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-3">
+              <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center gap-3">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Diagnostic quiz with adaptive revision highlights</span>
+                <span>Take a diagnostic quiz to reveal targeted revision priorities</span>
               </div>
             </div>
 
-            <div className="pt-2 flex flex-col sm:flex-row gap-2.5">
+            <div className="pt-2 flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => {
                   setShowWelcomeBanner(false);
                   localStorage.setItem('memoryscape_onboarded', 'true');
                   setSelectedConceptId('inheritance');
+                  setDemoStep(2);
                 }}
-                className="flex-1 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold font-mono text-xs rounded-xl transition-colors shadow-md flex items-center justify-center gap-1.5"
+                className="flex-1 py-3 px-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-sm rounded-xl transition-all shadow-md shadow-cyan-500/20 flex items-center justify-center gap-2 active:scale-98"
               >
-                <span>Explore Offline Demo</span>
+                <span>Explore sample map</span>
+                <ArrowRight className="w-4 h-4" />
               </button>
 
               <button
@@ -307,12 +350,16 @@ export default function App() {
                   localStorage.setItem('memoryscape_onboarded', 'true');
                   setIsUploadOpen(true);
                 }}
-                className="flex-1 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 font-mono text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                className="flex-1 py-3 px-4 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-200 font-medium text-sm rounded-xl transition-all flex items-center justify-center gap-2"
               >
-                <Upload className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Add Your Notes</span>
+                <Upload className="w-4 h-4 text-slate-400" />
+                <span>Upload notes</span>
               </button>
             </div>
+
+            <p className="text-[11px] text-slate-400 leading-normal border-t border-slate-800/80 pt-3">
+              Sample map (Java OOP) works immediately offline without an API key. Uploading custom notes uses Google Gemini to generate linked concepts.
+            </p>
           </div>
         </div>
       )}

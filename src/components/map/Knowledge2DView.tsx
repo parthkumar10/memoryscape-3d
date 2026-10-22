@@ -58,10 +58,10 @@ export const Knowledge2DView: React.FC<Knowledge2DViewProps> = ({
             <div key={cluster} className="space-y-3">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
-                <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider font-mono">
+                <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider font-sans">
                   {cluster}
                 </h3>
-                <span className="text-xs font-mono text-slate-500">
+                <span className="text-xs text-slate-400 font-sans">
                   ({clusterConcepts.length})
                 </span>
               </div>

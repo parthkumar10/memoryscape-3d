@@ -161,16 +161,16 @@ export const GeminiChatbot: React.FC<GeminiChatbotProps> = ({
       <div className="fixed bottom-5 right-5 z-40">
         <button
           onClick={() => setIsOpen(true)}
-          className="flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-slate-900 border border-cyan-500/50 hover:border-cyan-400 text-slate-100 shadow-xl shadow-cyan-950/40 hover:shadow-cyan-500/20 transition-all group"
+          className="flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-slate-900 border border-cyan-500/50 hover:border-cyan-400 text-slate-100 shadow-xl shadow-cyan-950/40 hover:shadow-cyan-500/20 transition-all group font-sans"
         >
           <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-cyan-500 to-violet-500 flex items-center justify-center text-slate-950 group-hover:scale-105 transition-transform">
             <Sparkles className="w-3.5 h-3.5" />
           </div>
-          <span className="text-xs font-mono font-medium text-cyan-200">
+          <span className="text-xs font-semibold text-cyan-200">
             Ask Gemini Tutor
           </span>
           {selectedConcept && (
-            <span className="hidden sm:inline-block text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 max-w-[100px] truncate">
+            <span className="hidden sm:inline-block text-[11px] px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 max-w-[120px] truncate font-medium">
               {selectedConcept.title}
             </span>
           )}
@@ -182,10 +182,10 @@ export const GeminiChatbot: React.FC<GeminiChatbotProps> = ({
   // Floating Minimized Dock Pill
   if (isMinimized) {
     return (
-      <div className="fixed bottom-5 right-5 z-40">
-        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 shadow-xl text-xs font-mono text-slate-300">
+      <div className="fixed bottom-5 right-5 z-40 font-sans">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 shadow-xl text-xs text-slate-300">
           <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-          <span>Gemini Tutor ({messages.length} msgs)</span>
+          <span className="font-medium">Gemini Tutor ({messages.length})</span>
           <button
             onClick={() => setIsMinimized(false)}
             className="p-1 hover:text-cyan-400 transition-colors"
@@ -209,24 +209,21 @@ export const GeminiChatbot: React.FC<GeminiChatbotProps> = ({
   return (
     <div className="fixed bottom-5 right-5 z-40 w-96 max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-100px)] flex flex-col bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden font-sans">
       {/* Header */}
-      <div className="px-4 py-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between shrink-0">
+      <div className="px-4 py-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between shrink-0 font-sans">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-cyan-500 to-violet-500 flex items-center justify-center text-slate-950 shadow-sm">
             <Sparkles className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+            <h3 className="text-xs font-bold text-slate-100 flex items-center gap-1.5 font-sans">
               <span>Gemini Socratic Tutor</span>
-              <span className="text-[9px] font-mono font-normal px-1.5 py-0.2 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/60">
-                gemini-3.8-flash
-              </span>
             </h3>
             {selectedConcept ? (
-              <p className="text-[10px] font-mono text-slate-400 truncate max-w-[190px]">
-                Focusing on: <span className="text-cyan-300">{selectedConcept.title}</span>
+              <p className="text-[11px] text-slate-400 truncate max-w-[190px] font-sans">
+                Focusing on: <span className="text-cyan-300 font-medium">{selectedConcept.title}</span>
               </p>
             ) : (
-              <p className="text-[10px] font-mono text-slate-400">
+              <p className="text-[11px] text-slate-400 font-sans">
                 Grounded in your study notes
               </p>
             )}

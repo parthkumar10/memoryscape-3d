@@ -79,7 +79,7 @@ export const AddConceptIslandModal: React.FC<AddConceptIslandModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="bg-[#0b1120] border border-cyan-500/50 rounded-2xl w-full max-w-lg p-5 sm:p-6 text-slate-100 shadow-2xl space-y-4 font-sans animate-in zoom-in-95">
+      <div className="bg-[#0b1120] border border-slate-700/80 rounded-2xl w-full max-w-lg p-5 sm:p-6 text-slate-100 shadow-2xl space-y-4 font-sans animate-in zoom-in-95">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <div className="flex items-center gap-3">
@@ -88,24 +88,24 @@ export const AddConceptIslandModal: React.FC<AddConceptIslandModalProps> = ({
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-100">
-                Synthesize 3D Concept Island
+                Add Custom Concept
               </h2>
-              <p className="text-xs text-slate-400 font-mono">
-                Materialize a new node into the 3D space in real time
+              <p className="text-xs text-slate-400">
+                Connect a new concept topic to your knowledge map in real time
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-3.5 text-xs font-mono">
+        <form onSubmit={handleSubmit} className="space-y-3.5 text-xs font-sans">
           {/* Title */}
           <div>
             <label className="block text-slate-300 font-semibold mb-1">
@@ -118,7 +118,7 @@ export const AddConceptIslandModal: React.FC<AddConceptIslandModalProps> = ({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Abstract Classes, Garbage Collection..."
-              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
+              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-sm"
             />
           </div>
 
@@ -134,7 +134,7 @@ export const AddConceptIslandModal: React.FC<AddConceptIslandModalProps> = ({
                 value={cluster}
                 onChange={(e) => setCluster(e.target.value)}
                 placeholder="e.g. OOP Fundamentals"
-                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 focus:outline-none focus:border-cyan-400"
+                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 focus:outline-none focus:border-cyan-400 text-xs"
               />
               <datalist id="cluster-suggestions">
                 {clusterOptions.map((c) => (
@@ -145,12 +145,12 @@ export const AddConceptIslandModal: React.FC<AddConceptIslandModalProps> = ({
 
             <div>
               <label className="block text-slate-300 font-semibold mb-1">
-                Connect to Existing Island
+                Connect to Existing Concept
               </label>
               <select
                 value={targetId}
                 onChange={(e) => setTargetId(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 focus:outline-none focus:border-cyan-400"
+                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 focus:outline-none focus:border-cyan-400 text-xs"
               >
                 {existingConcepts.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -166,12 +166,12 @@ export const AddConceptIslandModal: React.FC<AddConceptIslandModalProps> = ({
             <div className="flex items-center justify-between text-slate-300 font-semibold">
               <span className="flex items-center gap-1.5">
                 <Link2 className="w-3.5 h-3.5 text-cyan-400" />
-                Directional Relationship Bridge
+                Directional Relationship
               </span>
               <select
                 value={relLabel}
                 onChange={(e) => setRelLabel(e.target.value as RelationshipType)}
-                className="px-2 py-1 rounded-lg bg-slate-900 border border-slate-800 text-cyan-300 text-[11px]"
+                className="px-2 py-1 rounded-lg bg-slate-900 border border-slate-800 text-cyan-300 font-mono text-[11px]"
               >
                 <option value="extends">extends</option>
                 <option value="implements">implements</option>
@@ -185,7 +185,7 @@ export const AddConceptIslandModal: React.FC<AddConceptIslandModalProps> = ({
               value={relExplanation}
               onChange={(e) => setRelExplanation(e.target.value)}
               placeholder="e.g. Abstract classes define common template methods inherited by subclasses"
-              className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 text-[11px] focus:outline-none focus:border-cyan-500"
+              className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 text-xs focus:outline-none focus:border-cyan-500"
             />
           </div>
 
@@ -200,14 +200,14 @@ export const AddConceptIslandModal: React.FC<AddConceptIslandModalProps> = ({
               value={briefExplanation}
               onChange={(e) => setBriefExplanation(e.target.value)}
               placeholder="Provide a concise 1-2 sentence core definition..."
-              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 focus:outline-none focus:border-cyan-400 font-sans text-xs"
+              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 focus:outline-none focus:border-cyan-400 text-sm"
             />
           </div>
 
           {/* Beginner Code Example (Optional) */}
           <div>
             <label className="block text-slate-300 font-semibold mb-1">
-              Code Snippet / Example <span className="text-slate-500">(Optional)</span>
+              Code Snippet / Example <span className="text-slate-500 font-normal">(Optional)</span>
             </label>
             <textarea
               rows={2}
@@ -223,16 +223,16 @@ export const AddConceptIslandModal: React.FC<AddConceptIslandModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-xl transition-colors font-mono"
+              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-xl transition-colors font-medium text-xs"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl transition-all shadow-md shadow-cyan-500/25 flex items-center gap-1.5 active:scale-95 font-mono"
+              className="px-5 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold rounded-xl transition-all shadow-md shadow-cyan-500/20 flex items-center gap-1.5 active:scale-95 text-xs"
             >
               <Sparkles className="w-3.5 h-3.5 text-slate-950" />
-              <span>Spawn 3D Island</span>
+              <span>Add Concept to Map</span>
             </button>
           </div>
         </form>

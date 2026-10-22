@@ -292,8 +292,11 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
     const width = container.clientWidth || 800;
     const height = container.clientHeight || 600;
     const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
-    camera.position.set(0, 16, 24);
+    const initialTransform = calculateFitTransform(concepts);
+    camera.position.copy(initialTransform.camPos);
     cameraRef.current = camera;
+    targetCamPosRef.current.copy(initialTransform.camPos);
+    targetLookAtRef.current.copy(initialTransform.lookAt);
 
     // 3. Renderer with Studio PBR Tone Mapping
     const isSoftwareGl = (() => {
@@ -325,6 +328,7 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
 
     // 4. Orbit Controls
     const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.copy(initialTransform.lookAt);
     controls.enableDamping = !prefersReducedMotion;
     controls.dampingFactor = 0.05;
     controls.maxPolarAngle = Math.PI / 2 - 0.05; // prevent going below floor
@@ -465,10 +469,10 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
           ctx.stroke();
         };
 
-        roundRect(8, 8, 368, 80, 18);
+        roundRect(8, 8, 368, 80, 20);
 
         // Text - capped, clear typography
-        ctx.font = 'bold 24px "Plus Jakarta Sans", system-ui, sans-serif';
+        ctx.font = 'bold 26px "Plus Jakarta Sans", system-ui, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         if (heatmapStatus === 'mastered') {
@@ -487,7 +491,7 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
       texture.colorSpace = THREE.SRGBColorSpace;
       const spriteMaterial = new THREE.SpriteMaterial({ map: texture, depthTest: false });
       const sprite = new THREE.Sprite(spriteMaterial);
-      sprite.scale.set(1.9, 0.52, 1);
+      sprite.scale.set(2.2, 0.58, 1);
       return sprite;
     };
 
@@ -655,7 +659,7 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
 
       // Part 11: Crisp High-Legibility Overhead Label Sprite
       const labelSprite = createTextSprite(concept.title, isSelected, isRevision, heatmapStatus);
-      labelSprite.position.set(0, 1.7, 0);
+      labelSprite.position.set(0, 1.85, 0);
       islandGroup.add(labelSprite);
 
       islandGroups.add(islandGroup);
@@ -996,15 +1000,15 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
     if (targetConcepts.length === 0) {
       return {
         lookAt: new THREE.Vector3(0, 0, 0),
-        camPos: new THREE.Vector3(0, 16, 24),
+        camPos: new THREE.Vector3(0, 12, 18),
       };
     }
 
     const box = new THREE.Box3();
     targetConcepts.forEach((c) => {
       const [x, y, z] = c.position;
-      box.expandByPoint(new THREE.Vector3(x - 2.2, y - 1.2, z - 2.2));
-      box.expandByPoint(new THREE.Vector3(x + 2.2, y + 2.6, z + 2.2));
+      box.expandByPoint(new THREE.Vector3(x - 2.0, y - 1.0, z - 2.0));
+      box.expandByPoint(new THREE.Vector3(x + 2.0, y + 2.4, z + 2.0));
     });
 
     const center = new THREE.Vector3();
@@ -1025,11 +1029,11 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
     const distX = size.x / (2 * Math.tan(horizontalFov / 2));
     const distZ = size.z / (2 * Math.tan(fov / 2));
 
-    const fitDistance = Math.max(distY, distX, distZ, 12) * 1.35;
-    const clampedDistance = THREE.MathUtils.clamp(fitDistance, 14, 55);
+    const fitDistance = Math.max(distY, distX, distZ, 8) * 1.08;
+    const clampedDistance = THREE.MathUtils.clamp(fitDistance, 10, 38);
 
-    const elevationAngle = 0.58;
-    const distanceAngle = 0.81;
+    const elevationAngle = 0.50;
+    const distanceAngle = 0.82;
 
     const camPos = new THREE.Vector3(
       center.x,
@@ -1054,8 +1058,9 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
   // Reset Camera to standard coordinate overview
   const handleResetCamera = () => {
     if (!cameraRef.current || !controlsRef.current) return;
-    targetLookAtRef.current.set(0, 0, 0);
-    targetCamPosRef.current.set(0, 16, 24);
+    const { lookAt, camPos } = calculateFitTransform(concepts);
+    targetLookAtRef.current.copy(lookAt);
+    targetCamPosRef.current.copy(camPos);
     isTransitioningRef.current = true;
     setIsTopDown(false);
     sfx.playFlightWhoosh();
@@ -1326,11 +1331,11 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
         </div>
       )}
 
-      {/* Top Floating Viewport Toolbar (Matching Reference Screenshot) */}
+      {/* Top Floating Viewport Toolbar */}
       <div className="absolute top-4 left-4 right-4 z-30 flex items-center justify-between pointer-events-none">
-        {/* Left Toolbar Cluster */}
-        <div className="pointer-events-auto flex items-center gap-1.5 bg-slate-950/85 backdrop-blur-md border border-slate-800/90 rounded-2xl p-1.5 shadow-2xl">
-          {/* 1. Sidebar Toggle (Hamburger Menu) */}
+        {/* Left Toolbar Cluster: Navigation, View Mode, Search */}
+        <div className="pointer-events-auto flex items-center gap-2 bg-slate-950/90 backdrop-blur-md border border-slate-800 rounded-2xl p-1.5 shadow-xl font-sans">
+          {/* Sidebar Drawer Toggle */}
           <button
             onClick={onToggleSidebar}
             className={`p-2 rounded-xl transition-all ${
@@ -1338,124 +1343,89 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
                 ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
                 : 'text-slate-300 hover:text-cyan-300 hover:bg-slate-900 border border-transparent'
             }`}
-            title="Toggle Concepts Sidebar (Menu)"
+            title="Toggle Concepts Sidebar"
             aria-label="Toggle Sidebar"
           >
             <Menu className="w-4 h-4" />
           </button>
 
-          <div className="w-px h-5 bg-slate-800/80 my-auto" />
+          <div className="w-px h-5 bg-slate-800 my-auto" />
 
-          {/* 2. Grouped View Mode Switcher */}
-          <div className="flex items-center gap-1 bg-slate-900/90 border border-slate-800/80 p-0.5 rounded-xl">
-            {/* 3D View (Cube) */}
+          {/* 3D vs 2D View Switcher */}
+          <div className="flex items-center p-0.5 bg-slate-900 border border-slate-800 rounded-xl text-xs font-medium">
             <button
               onClick={() => onViewModeChange && onViewModeChange('3d')}
-              className={`p-2 rounded-lg transition-all flex items-center justify-center ${
+              className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
                 viewMode === '3d'
-                  ? 'bg-cyan-500 text-slate-950 shadow-sm font-bold'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  ? 'bg-cyan-500 text-slate-950 font-semibold shadow-xs'
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
-              title="3D Knowledge Space"
-              aria-label="3D View"
+              title="Interactive 3D Map View"
             >
-              <Box className="w-4 h-4" />
+              <Box className="w-3.5 h-3.5" />
+              <span>3D Map</span>
             </button>
-
-            {/* 2D Hierarchy / Graph View */}
             <button
               onClick={() => onViewModeChange && onViewModeChange('2d')}
-              className={`p-2 rounded-lg transition-all flex items-center justify-center ${
+              className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
                 viewMode === '2d'
-                  ? 'bg-cyan-500 text-slate-950 shadow-sm font-bold'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  ? 'bg-cyan-500 text-slate-950 font-semibold shadow-xs'
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
-              title="2D Concept Hierarchy"
-              aria-label="2D Hierarchy View"
+              title="Accessible 2D List Matrix"
             >
-              <GitFork className="w-4 h-4" />
-            </button>
-
-            {/* Matrix / List View */}
-            <button
-              onClick={() => onViewModeChange && onViewModeChange('2d')}
-              className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all flex items-center justify-center"
-              title="Matrix / List View"
-              aria-label="List View"
-            >
-              <LayoutGrid className="w-4 h-4" />
+              <GitFork className="w-3.5 h-3.5" />
+              <span>List</span>
             </button>
           </div>
 
-          <div className="w-px h-5 bg-slate-800/80 my-auto" />
+          <div className="w-px h-5 bg-slate-800 my-auto" />
 
-          {/* 3. Re-Center / Zoom to Fit (Compass) */}
+          {/* Spotlight Search Trigger */}
           <button
-            onClick={handleZoomToFit}
-            className="p-2 rounded-xl text-slate-300 hover:text-cyan-300 hover:bg-slate-900 active:scale-95 transition-all"
-            title="Re-Center & Frame View (F)"
-            aria-label="Re-Center View"
+            onClick={() => setIsSpotlightOpen(true)}
+            className="px-2.5 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-850 border border-slate-800 text-slate-300 hover:text-cyan-300 transition-all flex items-center gap-1.5 text-xs font-sans"
+            title="Search concepts (⌘K or /)"
           >
-            <Compass className="w-4 h-4 text-cyan-400" />
+            <Search className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden sm:inline">Search</span>
+            <kbd className="hidden lg:inline px-1.5 py-0.2 rounded bg-slate-800 border border-slate-700 text-[10px] font-mono text-slate-400">
+              ⌘K
+            </kbd>
           </button>
+        </div>
 
-          {/* 4. Lock / Free Camera Rotation */}
-          <button
-            onClick={() => {
-              setIsCameraLocked((prev) => {
-                const next = !prev;
-                setNavFeedbackMessage(next ? 'Camera rotation locked' : 'Camera rotation unlocked');
-                setTimeout(() => setNavFeedbackMessage(null), 2500);
-                return next;
-              });
-            }}
-            className={`p-2 rounded-xl transition-all ${
-              isCameraLocked
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                : 'text-slate-300 hover:text-cyan-300 hover:bg-slate-900 border border-transparent'
-            }`}
-            title={isCameraLocked ? 'Unlock Camera Rotation' : 'Lock Camera Rotation'}
-            aria-label="Lock Camera Rotation"
-          >
-            {isCameraLocked ? (
-              <Lock className="w-4 h-4 text-amber-400" />
-            ) : (
-              <Unlock className="w-4 h-4 text-slate-400" />
-            )}
-          </button>
-
-          <div className="w-px h-5 bg-slate-800/80 my-auto" />
-
-          {/* 5. Retention & Mastery Heatmap Toggle */}
+        {/* Center Toolbar Cluster: Study Modes & Audio Guidance */}
+        <div className="pointer-events-auto hidden md:flex items-center gap-1 bg-slate-950/90 backdrop-blur-md border border-slate-800 rounded-2xl p-1.5 shadow-xl font-sans">
+          {/* Retention & Mastery Heatmap Toggle */}
           <button
             onClick={() => {
               setIsHeatmapActive((prev) => {
                 const next = !prev;
                 sfx.playTourStep();
                 setNavFeedbackMessage(
-                  next ? 'Heatmap: Retention & Mastery Aura Enabled' : 'Heatmap: Standard View'
+                  next ? 'Mastery Heatmap Enabled' : 'Standard View'
                 );
                 setTimeout(() => setNavFeedbackMessage(null), 2500);
                 return next;
               });
             }}
-            className={`px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 text-xs font-mono ${
+            className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 text-xs font-medium ${
               isHeatmapActive
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-xs'
-                : 'text-slate-300 hover:text-amber-300 hover:bg-slate-900 border border-transparent'
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                : 'text-slate-300 hover:text-slate-100 hover:bg-slate-900 border border-transparent'
             }`}
-            title="Toggle Retention & Mastery Heatmap (Green = Mastered, Red = Review Due)"
-            aria-label="Toggle Retention Heatmap"
+            title="Show retention status: Mastered (green) vs Need Revision (coral)"
           >
             <Flame
-              className={`w-4 h-4 ${
-                isHeatmapActive ? 'text-amber-400 animate-pulse' : 'text-slate-400'
+              className={`w-3.5 h-3.5 ${
+                isHeatmapActive ? 'text-amber-400' : 'text-slate-400'
               }`}
             />
-            <span className="hidden md:inline font-semibold">Heatmap</span>
+            <span>Mastery Heatmap</span>
           </button>
 
-          {/* 6. Cinematic Guided Tour Button */}
+          {/* Guided Audio Tour */}
           <button
             onClick={() => {
               setIsTourActive((prev) => {
@@ -1465,98 +1435,59 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
                   setTourProgress(0);
                   setIsTourPaused(false);
                   sfx.playSuccessChime();
-                  setNavFeedbackMessage('Starting 3D Cinematic Guided Tour');
+                  setNavFeedbackMessage('Starting Audio Tour');
                 } else {
-                  setNavFeedbackMessage('Cinematic Tour Ended');
+                  setNavFeedbackMessage('Audio Tour Ended');
                 }
                 setTimeout(() => setNavFeedbackMessage(null), 2500);
                 return next;
               });
             }}
-            className={`px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 text-xs font-mono ${
+            className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 text-xs font-medium ${
               isTourActive
-                ? 'bg-cyan-500/25 text-cyan-300 border border-cyan-500/50 shadow-xs animate-pulse'
-                : 'text-slate-300 hover:text-cyan-300 hover:bg-slate-900 border border-transparent'
+                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
+                : 'text-slate-300 hover:text-slate-100 hover:bg-slate-900 border border-transparent'
             }`}
-            title="Start 3D Cinematic Guided Presentation Tour"
-            aria-label="Start Guided Tour"
+            title="Start guided audio walkthrough of concept structures"
           >
             <Play
-              className={`w-4 h-4 ${
+              className={`w-3.5 h-3.5 ${
                 isTourActive ? 'text-cyan-400 fill-cyan-400' : 'text-cyan-400'
               }`}
             />
-            <span className="hidden md:inline font-semibold">3D Tour</span>
+            <span>Audio Tour</span>
           </button>
 
-          {/* 7. Procedural Audio Mute/Unmute */}
-          <button
-            onClick={() => {
-              const muted = sfx.toggleMute();
-              setIsMuted(muted);
-              if (!muted) sfx.playNodeClick();
-            }}
-            className="p-2 rounded-xl text-slate-300 hover:text-cyan-300 hover:bg-slate-900 active:scale-95 transition-all"
-            title={isMuted ? 'Unmute Sci-Fi SFX Audio' : 'Mute Sci-Fi SFX Audio'}
-            aria-label="Toggle Audio"
-          >
-            {isMuted ? (
-              <VolumeX className="w-4 h-4 text-slate-500" />
-            ) : (
-              <Volume2 className="w-4 h-4 text-cyan-400" />
-            )}
-          </button>
-
-          {/* 8. Spotlight Quick-Search & Warp */}
-          <button
-            onClick={() => setIsSpotlightOpen(true)}
-            className="p-2 rounded-xl text-slate-300 hover:text-cyan-300 hover:bg-slate-900 active:scale-95 transition-all flex items-center gap-1.5"
-            title="Spotlight Search & Warp (⌘K or /)"
-            aria-label="Search Concepts"
-          >
-            <Search className="w-4 h-4 text-cyan-400" />
-            <span className="hidden xl:inline text-xs font-mono text-slate-400">⌘K</span>
-          </button>
-        </div>
-
-        {/* Right Action: Spawn Island, Cheat Sheet, Add Notes, Take Quiz */}
-        <div className="pointer-events-auto flex items-center gap-2">
-          {onOpenAddIsland && (
-            <button
-              onClick={onOpenAddIsland}
-              className="px-3 py-2 rounded-xl bg-violet-950/40 hover:bg-violet-900/60 border border-violet-700/60 text-violet-300 hover:text-violet-200 font-mono text-xs flex items-center gap-1.5 transition-all active:scale-95 shadow-xs"
-              title="Synthesize New 3D Concept Island"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-              <span className="hidden md:inline font-semibold">Spawn Island</span>
-            </button>
-          )}
-
+          {/* Revision Sheet / Cheat Sheet Export */}
           {onOpenCheatSheet && (
             <button
               onClick={onOpenCheatSheet}
-              className="px-3 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-cyan-300 font-mono text-xs flex items-center gap-1.5 transition-all active:scale-95"
-              title="Open Exam Revision Cheat Sheet"
+              className="px-3 py-1.5 rounded-xl text-slate-300 hover:text-slate-100 hover:bg-slate-900 transition-all flex items-center gap-1.5 text-xs font-medium"
+              title="Open Printable Study Summary & Revision Notes"
             >
-              <FileText className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="hidden md:inline font-semibold">Cheat Sheet</span>
+              <FileText className="w-3.5 h-3.5 text-slate-400" />
+              <span>Study Sheet</span>
             </button>
           )}
+        </div>
 
+        {/* Right Action: Upload Notes & Take Diagnostic Quiz */}
+        <div className="pointer-events-auto flex items-center gap-2 font-sans">
           {onOpenUpload && (
             <button
               onClick={onOpenUpload}
-              className="px-3 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-cyan-300 font-mono text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95"
-              title="Add or Upload Study Notes"
+              className="px-3.5 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-200 hover:text-cyan-300 text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm active:scale-95"
+              title="Upload PDF or paste custom study notes"
             >
               <Upload className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="hidden sm:inline">Add Notes</span>
+              <span className="hidden sm:inline">Upload notes</span>
             </button>
           )}
+
           {onOpenQuiz && (
             <button
               onClick={onOpenQuiz}
-              className="px-4 py-2 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-bold font-mono text-xs flex items-center gap-2 shadow-lg shadow-cyan-500/25 active:scale-95 transition-all"
+              className="px-4 py-2 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-md shadow-cyan-500/20 active:scale-95 transition-all"
               title="Take 5-Question Grounded Diagnostic Quiz"
             >
               <ClipboardList className="w-4 h-4 text-slate-950" />
@@ -1566,74 +1497,56 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
         </div>
       </div>
 
-      {/* Viewport Telemetry HUD & Navigation Status Stack */}
+      {/* Summary Metrics & Grounding Badge */}
       <div className="absolute top-18 left-4 z-20 flex flex-col items-start gap-2 max-w-[calc(100vw-2rem)] pointer-events-none">
-        {/* Real-time Telemetry Overlay Bar */}
-        <div className="pointer-events-auto flex flex-wrap items-center gap-2 bg-slate-950/90 border border-slate-800/90 backdrop-blur-md px-3 py-2 rounded-xl shadow-xl text-xs font-mono">
-          {/* 1. Concept Islands Count */}
+        <div className="pointer-events-auto flex flex-wrap items-center gap-2 bg-slate-950/90 border border-slate-800/90 backdrop-blur-md px-3 py-1.5 rounded-xl shadow-lg text-xs font-sans">
+          {/* Concepts Count */}
           <div
-            className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-900/90 border border-slate-800"
-            title={`${concepts.length} Concept Islands in knowledge map`}
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-900/90"
+            title={`${concepts.length} Concept structures in map`}
           >
             <Layers className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-            <span className="text-slate-400 text-[11px]">Islands:</span>
-            <span className="font-semibold text-cyan-300">{concepts.length}</span>
+            <span className="font-semibold text-slate-100">{concepts.length}</span>
+            <span className="text-slate-400 text-[11px]">Concepts</span>
           </div>
 
-          {/* 2. Active Connections Count */}
+          {/* Active Connections */}
           <div
-            className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-900/90 border border-slate-800"
-            title={
-              selectedConceptId
-                ? `${selectedConnectionsCount} active relationship connections for selected island (${relationships.length} total in map)`
-                : `${relationships.length} active relationship connections in map`
-            }
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-900/90"
+            title={`${relationships.length} directional relationships`}
           >
             <Share2 className="w-3.5 h-3.5 text-violet-400 shrink-0" />
-            <span className="text-slate-400 text-[11px]">Connections:</span>
             <span className="font-semibold text-violet-300">
-              {selectedConceptId ? (
-                <>
-                  <span className="text-violet-200">{selectedConnectionsCount}</span>
-                  <span className="text-slate-500 font-normal text-[10px]">/{relationships.length}</span>
-                </>
-              ) : (
-                relationships.length
-              )}
+              {selectedConceptId
+                ? `${selectedConnectionsCount} connected`
+                : `${relationships.length} connections`}
             </span>
           </div>
 
-          {/* 3. Current Camera Coordinates */}
+          {/* Verified Citations Badge */}
           <div
-            className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-900/90 border border-slate-800"
-            title="Real-time Camera World Coordinates (X, Y, Z)"
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 text-[11px]"
+            title="All explanations grounded with citations from course notes"
           >
-            <Camera className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-            <span className="text-slate-400 text-[11px]">Cam:</span>
-            <span className="text-emerald-300 tracking-tight font-medium text-[11px]">
-              X:{cameraCoords.x.toFixed(1)} Y:{cameraCoords.y.toFixed(1)} Z:{cameraCoords.z.toFixed(1)}
-            </span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <span>Grounded in Notes</span>
           </div>
         </div>
 
         {/* Orbit & Navigation Hint */}
-        <div className="text-[11px] font-mono text-slate-400 bg-slate-950/80 border border-slate-800/80 px-3 py-1.5 rounded-lg backdrop-blur-xs flex items-center gap-2 shadow-md">
-          <span>Drag to orbit</span>
+        <div className="text-[11px] font-sans text-slate-400 bg-slate-950/80 border border-slate-800/80 px-3 py-1 rounded-lg backdrop-blur-xs flex items-center gap-2 shadow-sm">
+          <span>Drag to rotate</span>
           <span>·</span>
           <span>Scroll to zoom</span>
           <span>·</span>
-          <span>Right-click to pan</span>
-          <span className="hidden sm:inline">·</span>
-          <span className="hidden sm:inline text-cyan-400/90 font-semibold">[F] Fit</span>
-          <span className="hidden sm:inline">·</span>
-          <span className="hidden sm:inline text-cyan-400/90 font-semibold">[B] Bookmarks</span>
+          <span>Click concept to inspect</span>
         </div>
 
         {/* Navigation & Camera Feedback HUD Toast */}
         {navFeedbackMessage && (
-          <div className="px-3.5 py-1.5 rounded-xl bg-slate-900/95 border border-cyan-500/50 text-cyan-200 font-mono text-xs flex items-center gap-2 backdrop-blur-md shadow-xl animate-in fade-in slide-in-from-top-2">
+          <div className="px-3.5 py-1.5 rounded-xl bg-slate-900/95 border border-cyan-500/50 text-cyan-200 font-sans text-xs flex items-center gap-2 backdrop-blur-md shadow-xl animate-in fade-in slide-in-from-top-2">
             <BookmarkCheck className="w-4 h-4 text-cyan-400 shrink-0" />
-            <span>Camera: <strong>{navFeedbackMessage}</strong></span>
+            <span>{navFeedbackMessage}</span>
           </div>
         )}
       </div>
@@ -1753,6 +1666,66 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
             Bookmarks (B)
           </span>
         </button>
+
+        {/* Lock / Unlock Camera Rotation */}
+        <button
+          onClick={() => {
+            setIsCameraLocked((prev) => {
+              const next = !prev;
+              setNavFeedbackMessage(next ? 'Camera rotation locked' : 'Camera rotation unlocked');
+              setTimeout(() => setNavFeedbackMessage(null), 2500);
+              return next;
+            });
+          }}
+          className={`p-2 rounded-xl transition-all group relative ${
+            isCameraLocked
+              ? 'text-amber-400 bg-amber-950/70 border border-amber-600/50'
+              : 'text-slate-300 hover:text-cyan-300 hover:bg-slate-800/90'
+          }`}
+          title={isCameraLocked ? 'Unlock Camera Rotation' : 'Lock Camera Rotation'}
+          aria-label="Toggle camera rotation lock"
+        >
+          {isCameraLocked ? <Lock className="w-4 h-4 text-amber-400" /> : <Unlock className="w-4 h-4" />}
+          <span className="absolute left-full ml-3 px-2 py-1 rounded-md bg-slate-900 border border-slate-700 text-[10px] font-mono text-slate-200 whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity shadow-xl z-30">
+            {isCameraLocked ? 'Unlock Rotation' : 'Lock Rotation'}
+          </span>
+        </button>
+
+        {/* Spatial Audio Cues Toggle */}
+        <button
+          onClick={() => {
+            const muted = sfx.toggleMute();
+            setIsMuted(muted);
+            if (!muted) sfx.playNodeClick();
+          }}
+          className="p-2 rounded-xl text-slate-300 hover:text-cyan-300 hover:bg-slate-800/90 active:scale-95 transition-all group relative"
+          title={isMuted ? 'Unmute Audio Cues' : 'Mute Audio Cues'}
+          aria-label="Toggle audio cues"
+        >
+          {isMuted ? (
+            <VolumeX className="w-4 h-4 text-slate-500" />
+          ) : (
+            <Volume2 className="w-4 h-4 text-cyan-400" />
+          )}
+          <span className="absolute left-full ml-3 px-2 py-1 rounded-md bg-slate-900 border border-slate-700 text-[10px] font-mono text-slate-200 whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity shadow-xl z-30">
+            {isMuted ? 'Unmute Audio' : 'Mute Audio'}
+          </span>
+        </button>
+
+        {/* Add Custom Concept */}
+        {onOpenAddIsland && (
+          <button
+            onClick={onOpenAddIsland}
+            className="p-2 rounded-xl text-violet-400 hover:text-violet-200 hover:bg-violet-950/60 active:scale-95 transition-all group relative"
+            title="Add Custom Concept to Map"
+            aria-label="Add Custom Concept"
+          >
+            <Sparkles className="w-4 h-4 text-violet-400" />
+            <span className="absolute left-full ml-3 px-2 py-1 rounded-md bg-slate-900 border border-violet-800/80 text-[10px] font-mono text-violet-300 whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity shadow-xl z-30">
+              Add Concept
+            </span>
+          </button>
+        )}
       </div>
 
       {/* Camera Bookmarks Flyout Drawer */}
@@ -1944,23 +1917,23 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
         </div>
       )}
 
-      {/* Feature 4: Interactive Relationship Bridge Hover Inspector */}
+      {/* Interactive Relationship Bridge Hover Inspector */}
       {hoveredBridge && (
-        <div className="pointer-events-none absolute bottom-8 left-1/2 -translate-x-1/2 px-4 py-2.5 rounded-2xl bg-slate-950/95 border border-cyan-500/60 text-xs font-mono backdrop-blur-xl shadow-2xl flex items-center gap-3 z-30 animate-in fade-in zoom-in-95">
-          <div className="w-6 h-6 rounded-lg bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
-            <Link2 className="w-3.5 h-3.5" />
+        <div className="pointer-events-none absolute bottom-8 left-1/2 -translate-x-1/2 px-5 py-3 rounded-2xl bg-slate-950/95 border border-slate-700/80 text-xs font-sans backdrop-blur-xl shadow-2xl flex items-center gap-3.5 z-30 animate-in fade-in zoom-in-95">
+          <div className="w-7 h-7 rounded-lg bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
+            <Link2 className="w-4 h-4" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-slate-100">{hoveredBridge.sourceTitle}</span>
-              <span className="px-2 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-700/60 text-[10px] text-cyan-300 font-semibold uppercase">
+              <span className="font-semibold text-sm text-slate-100">{hoveredBridge.sourceTitle}</span>
+              <span className="px-2 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-700/60 text-[10px] font-mono text-cyan-300 font-semibold uppercase">
                 {hoveredBridge.relationship.label}
               </span>
-              <span className="text-slate-400">➔</span>
-              <span className="font-bold text-slate-100">{hoveredBridge.targetTitle}</span>
+              <span className="text-slate-400 text-xs">➔</span>
+              <span className="font-semibold text-sm text-slate-100">{hoveredBridge.targetTitle}</span>
             </div>
             {hoveredBridge.relationship.explanation && (
-              <p className="text-[11px] text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-300 mt-1 font-normal leading-relaxed">
                 {hoveredBridge.relationship.explanation}
               </p>
             )}
@@ -1968,18 +1941,18 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
         </div>
       )}
 
-      {/* Feature 2: Cinematic 3D Guided Presentation Tour Controller */}
+      {/* Guided Audio Walkthrough Controller */}
       {isTourActive && concepts[tourIndex] && (
-        <div className="pointer-events-auto absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-lg mx-auto px-4 z-40 animate-in fade-in slide-in-from-bottom-3">
-          <div className="bg-slate-950/95 border border-cyan-500/50 backdrop-blur-xl rounded-2xl p-4 shadow-2xl shadow-cyan-950/50 space-y-3 font-mono">
+        <div className="pointer-events-auto absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-lg mx-auto px-4 z-40 animate-in fade-in slide-in-from-bottom-3 font-sans">
+          <div className="bg-slate-950/95 border border-slate-700/80 backdrop-blur-xl rounded-2xl p-4 shadow-2xl space-y-3">
             {/* Top Header & Progress */}
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-                <span className="text-cyan-300 font-bold uppercase tracking-wider text-[11px]">
-                  Cinematic Tour · Stop {tourIndex + 1} of {concepts.length}
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                <span className="text-cyan-300 font-semibold text-xs">
+                  Audio Walkthrough · Concept {tourIndex + 1} of {concepts.length}
                 </span>
-                <span className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400 text-[10px]">
+                <span className="px-2 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-slate-300 text-[11px]">
                   {concepts[tourIndex].cluster}
                 </span>
               </div>
@@ -1990,7 +1963,7 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
                   setTourProgress(0);
                 }}
                 className="p-1 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors"
-                title="Exit Tour"
+                title="Exit Walkthrough"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -2075,7 +2048,7 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
                     ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
                     : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300'
                 }`}
-                title={isVoiceEnabled ? 'Disable AI Voice Guide' : 'Enable AI Voice Guide'}
+                title={isVoiceEnabled ? 'Disable Voice Guidance' : 'Enable Voice Guidance'}
               >
                 {isVoiceEnabled ? (
                   <Mic className="w-3.5 h-3.5 text-cyan-400" />
@@ -2091,32 +2064,29 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
         </div>
       )}
 
-      {/* Feature 5: Sci-Fi 3D Radar HUD */}
+      {/* Map Overview Navigator */}
       <div className="absolute top-18 right-6 z-20 pointer-events-auto">
-        <div className="bg-slate-950/90 border border-cyan-500/30 backdrop-blur-md rounded-2xl p-2.5 shadow-2xl space-y-1.5 font-mono">
-          <div className="flex items-center justify-between text-[10px] text-slate-400 border-b border-slate-800/80 pb-1 px-1">
-            <span className="flex items-center gap-1.5 text-cyan-400 font-semibold uppercase tracking-wider">
-              <Radio className="w-3 h-3 text-cyan-400 animate-pulse" />
-              3D Radar
+        <div className="bg-slate-950/90 border border-slate-800/90 backdrop-blur-md rounded-2xl p-2.5 shadow-xl space-y-1.5 font-sans">
+          <div className="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/80 pb-1.5 px-1">
+            <span className="flex items-center gap-1.5 text-slate-200 font-medium text-[11px] uppercase tracking-wider">
+              <Compass className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Map Overview</span>
             </span>
             <button
               onClick={() => setIsRadarOpen((prev) => !prev)}
-              className="text-slate-500 hover:text-cyan-300 transition-colors"
+              className="text-slate-400 hover:text-slate-200 text-[11px] transition-colors"
             >
               {isRadarOpen ? 'Hide' : 'Show'}
             </button>
           </div>
 
           {isRadarOpen && (
-            <div className="relative w-28 h-28 bg-[#040812] border border-cyan-900/50 rounded-xl overflow-hidden flex items-center justify-center">
-              {/* Radar Concentric Grid Rings */}
-              <div className="absolute inset-2 border border-cyan-500/15 rounded-full pointer-events-none" />
-              <div className="absolute inset-6 border border-cyan-500/20 rounded-full pointer-events-none" />
-              <div className="absolute w-full h-[1px] bg-cyan-500/10 pointer-events-none" />
-              <div className="absolute h-full w-[1px] bg-cyan-500/10 pointer-events-none" />
-
-              {/* Dynamic Rotating Sweep Beam */}
-              <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/15 via-transparent to-transparent animate-spin origin-center pointer-events-none duration-3000" />
+            <div className="relative w-28 h-28 bg-[#060a14] border border-slate-800/80 rounded-xl overflow-hidden flex items-center justify-center">
+              {/* Concentric Guide Rings */}
+              <div className="absolute inset-2 border border-slate-800/70 rounded-full pointer-events-none" />
+              <div className="absolute inset-6 border border-slate-800/50 rounded-full pointer-events-none" />
+              <div className="absolute w-full h-[1px] bg-slate-800/40 pointer-events-none" />
+              <div className="absolute h-full w-[1px] bg-slate-800/40 pointer-events-none" />
 
               {/* Concept Blips */}
               {concepts.map((concept) => {
@@ -2138,18 +2108,18 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
                     key={concept.id}
                     onClick={() => onSelectConcept(concept.id)}
                     style={{ left: `${dotX}px`, top: `${dotY}px` }}
-                    className="absolute -translate-x-1/2 -translate-y-1/2 group transition-transform hover:scale-150 z-10"
+                    className="absolute -translate-x-1/2 -translate-y-1/2 group transition-transform hover:scale-150 z-10 p-0.5"
                     title={`${concept.title} (${concept.cluster})`}
                   >
                     <div
-                      className={`w-2 h-2 rounded-full ${
+                      className={`w-2 h-2 rounded-full transition-all ${
                         isSelected
-                          ? 'bg-cyan-300 ring-2 ring-cyan-400 animate-ping'
+                          ? 'bg-cyan-300 ring-2 ring-cyan-400 ring-offset-1 ring-offset-slate-950 scale-125'
                           : isMastered
-                          ? 'bg-emerald-400 shadow-sm shadow-emerald-400'
+                          ? 'bg-emerald-400'
                           : isRevision
-                          ? 'bg-rose-400 shadow-sm shadow-rose-400'
-                          : 'bg-cyan-500 shadow-sm shadow-cyan-500/50'
+                          ? 'bg-rose-400 shadow-sm shadow-rose-400/50'
+                          : 'bg-slate-400 hover:bg-cyan-400'
                       }`}
                     />
                   </button>
@@ -2169,10 +2139,10 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
                 return (
                   <div
                     style={{ left: `${cx}px`, top: `${cy}px` }}
-                    className="absolute -translate-x-1/2 -translate-y-1/2 w-3 h-3 border border-amber-400 rounded-full flex items-center justify-center pointer-events-none z-20 shadow-xs"
-                    title="Camera World Position"
+                    className="absolute -translate-x-1/2 -translate-y-1/2 w-3 h-3 border border-cyan-400 rounded-full flex items-center justify-center pointer-events-none z-20 shadow-xs"
+                    title="Camera Position"
                   >
-                    <div className="w-1 h-1 bg-amber-400 rounded-full" />
+                    <div className="w-1 h-1 bg-cyan-400 rounded-full" />
                   </div>
                 );
               })()}
