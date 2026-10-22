@@ -95,6 +95,7 @@ CRITICAL INSTRUCTIONS:
    - "explanation": rationale citing specific facts from the notes.
    - "sourceReference": reference to the notes paragraph.
    - "linkedConceptIds": array of 1-3 concept IDs tested by this question.
+5. Include only relationships that are clearly supported by the notes. Return as many as the notes support; do not invent links just to reach a count.
 
 OUTPUT FORMAT: Return raw JSON adhering to the specified schema.`;
 
@@ -181,8 +182,12 @@ OUTPUT FORMAT: Return raw JSON adhering to the specified schema.`;
           const isTransient =
             err?.status === 503 ||
             err?.status === 429 ||
+            err?.status === 504 ||
             errStr.includes('503') ||
             errStr.includes('429') ||
+            errStr.includes('504') ||
+            errStr.includes('DEADLINE_EXCEEDED') ||
+            errStr.toLowerCase().includes('deadline') ||
             errStr.includes('overloaded') ||
             errStr.includes('UNAVAILABLE') ||
             errStr.includes('RESOURCE_EXHAUSTED') ||

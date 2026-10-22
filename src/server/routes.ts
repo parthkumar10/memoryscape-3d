@@ -136,10 +136,12 @@ apiRouter.post('/generate-map', async (req: Request, res: Response): Promise<voi
       friendly = 'The AI service is temporarily experiencing high demand (503). Your notes have been preserved—please click Generate again in a few moments.';
     } else if (raw.includes('429') || raw.includes('RESOURCE_EXHAUSTED')) {
       friendly = 'The AI provider rate limit was temporarily reached (429). Please wait a moment and retry.';
+    } else if (raw.includes('504') || raw.includes('DEADLINE_EXCEEDED') || raw.toLowerCase().includes('deadline')) {
+      friendly = 'Gemini took too long to process these notes (504). Your notes are still here—please retry in a moment or try a shorter section.';
     } else if (raw.includes('GEMINI_API_KEY') || raw.includes('API Key is not configured')) {
       friendly = 'Gemini API Key is not configured. Add GEMINI_API_KEY in .env or Settings > Secrets to generate custom maps.';
     } else if (raw.startsWith('AI output validation failed:')) {
-      friendly = 'The model returned an incomplete structure. Please retry generating with your notes.';
+      friendly = 'Gemini returned an incomplete map for these notes. Your notes are preserved—retry once, or try a shorter section with clearer concept definitions.';
     } else {
       // Clean any raw json blocks from string
       const sanitized = raw.replace(/\{[\s\S]*"error"[\s\S]*\}/g, '').trim();

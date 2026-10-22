@@ -125,7 +125,7 @@ export const AIGeneratedMapSchema = z.object({
   title: z.string().min(1),
   description: z.string().min(10),
   concepts: z.array(AIConceptSchema).min(6).max(14),
-  relationships: z.array(AIRelationshipSchema).min(4),
+  relationships: z.array(AIRelationshipSchema),
   quiz: z.array(AIQuizQuestionSchema).length(5),
 });
 
