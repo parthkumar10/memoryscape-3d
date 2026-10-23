@@ -13,6 +13,9 @@ export async function extractTextFromPdfBuffer(buffer: Buffer): Promise<Extracte
   // Use legacy build for stable Node.js server execution
   // @ts-ignore
   const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  // Load the worker into the Node process so serverless bundlers include it for PDF.js's fake worker.
+  // @ts-ignore
+  await import('pdfjs-dist/legacy/build/pdf.worker.mjs');
 
   const uint8Array = new Uint8Array(buffer);
   const loadingTask = pdfjsLib.getDocument({
