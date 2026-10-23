@@ -53,27 +53,17 @@ Visit [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## ☁️ Deploy the full app (Vercel + Render)
+## ☁️ Deploy the full app on Vercel
 
-Vercel hosts the Vite frontend; Render runs the Express API and keeps `GEMINI_API_KEY` on the server. Do not add the Gemini key as a `VITE_` variable or commit it to Git.
+The Vite frontend and Express API are served from the same Vercel project. Vercel builds the function in `api/[...route].ts`; no separate Render service or cross-origin API URL is needed.
 
-### Render API
+1. Import the GitHub repository into Vercel with the repository root as the root directory.
+2. Use the Vite framework preset, build command `npm run build`, and output directory `dist`.
+3. In Vercel Project Settings → Environment Variables, add `GEMINI_API_KEY` with a Google AI Studio key. Do not prefix it with `VITE_` or commit it to Git.
+4. Remove `VITE_API_URL` if it points to a separate backend. The default empty value sends API requests to the same Vercel domain.
+5. Redeploy after changing environment variables or pushing code.
 
-Create a Node Web Service from this repository in Render. Use the repository root, set the build command to `npm install --include=dev && npm run build`, and the start command to `npm start`. Add these environment variables in the Render service settings:
-
-- `NODE_ENV` = `production`
-- `GEMINI_API_KEY` = a newly generated Google AI Studio key
-- `FRONTEND_URL` = the exact public Vercel origin, for example `https://your-project.vercel.app` (no trailing slash)
-
-After the service is live, copy its base URL, for example `https://your-api.onrender.com`.
-
-### Vercel frontend
-
-In the Vercel project settings, set the root directory to the repository root, build command to `npm run build`, and output directory to `dist`. Add this environment variable for Production:
-
-- `VITE_API_URL` = the Render service base URL, for example `https://your-api.onrender.com` (no trailing slash)
-
-Redeploy the Vercel project after setting the variable. The demo can be explored without a Gemini key; custom note generation and AI chat need the Render API and a valid key.
+The sample map works without a Gemini key. Custom note generation and AI chat require a valid key and are subject to Google AI Studio quotas. PDF uploads are limited to 3MB to fit Vercel Function request-size limits.
 
 ---
 

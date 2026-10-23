@@ -49,8 +49,8 @@ export const NotesInputModal: React.FC<NotesInputModalProps> = ({
       setErrorMessage('Please select a valid .pdf file.');
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      setErrorMessage('File size exceeds the 10MB limit. Please upload a smaller document.');
+    if (file.size > 3 * 1024 * 1024) {
+      setErrorMessage('File size exceeds the 3MB limit for the live app. Please upload a smaller document.');
       return;
     }
 
@@ -290,7 +290,7 @@ export const NotesInputModal: React.FC<NotesInputModalProps> = ({
                   {pdfFile ? pdfFile.name : 'Click to select or drop a text-based PDF'}
                 </p>
                 <p className="text-[11px] text-slate-400 mt-1">
-                  Supports digital PDFs with selectable text (up to 10MB, max 25 pages)
+                  Supports digital PDFs with selectable text (up to 3MB, max 25 pages)
                 </p>
               </div>
 
