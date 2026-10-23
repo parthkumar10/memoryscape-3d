@@ -126,10 +126,3 @@ The sample map works without a Gemini key. Custom note generation and AI chat re
 | `npm run lint` | Run the TypeScript check |
 | `npm run build` | Build the production frontend |
 | `npm run preview` | Preview the Vite production build |
-
-## 🔐 Before making this repository public
-
-- Keep `.env` and all real API keys out of Git. If a key was ever exposed, revoke it in Google AI Studio and create a replacement.
-- Vercel environment variables are separate from local `.env`; set `GEMINI_API_KEY` in Vercel and redeploy.
-- Review the repository's **entire Git history**, not only the current files, for credentials and private data before changing visibility.
-- Never put a secret in a frontend `VITE_*` variable. The Gemini key must remain server-side.
