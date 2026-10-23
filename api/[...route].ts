@@ -3,7 +3,8 @@ import { apiRouter } from '../src/server/routes.ts';
 
 const app = express();
 
-app.use(express.json({ limit: '4mb' }));
+app.use('/api/extract-pdf', express.raw({ type: 'application/pdf', limit: '4.2mb' }));
+app.use(express.json({ limit: '15mb' }));
 app.use('/api', apiRouter);
 app.use(apiRouter);
 

@@ -63,7 +63,7 @@ The Vite frontend and Express API are served from the same Vercel project. Verce
 4. Remove `VITE_API_URL` if it points to a separate backend. The default empty value sends API requests to the same Vercel domain.
 5. Redeploy after changing environment variables or pushing code.
 
-The sample map works without a Gemini key. Custom note generation and AI chat require a valid key and are subject to Google AI Studio quotas. PDF uploads are limited to 3MB to fit Vercel Function request-size limits.
+The sample map works without a Gemini key. Custom note generation and AI chat require a valid key and are subject to Google AI Studio quotas. PDF uploads are limited to 4.2 MB and 25 pages to fit Vercel Function request-size limits. PDFs are sent as binary data rather than base64 to use the request limit efficiently. Scanned PDF OCR runs locally in the browser in English for up to 10 pages; the OCR engine and language model are fetched from a public CDN, but PDF pages are not sent to that service.
 
 ---
 
@@ -76,11 +76,11 @@ The sample map works without a Gemini key. Custom note generation and AI chat re
 - Includes a 5-question grounded diagnostic quiz with exact paragraph citations, a self-reported confidence check, and a targeted revision path.
 
 ### 2. Generative Custom Note Processing (Requires `GEMINI_API_KEY`)
-- **Input Methods**: Pasted text or uploaded text-based PDF.
+- **Input Methods**: Pasted text or uploaded text-based/scanned PDF.
 - **Paragraph & Page Anchors**: Automatically splits notes into `Page X, ¶Y` references.
-- **Scanned PDF Detection**: Flags documents with `< 40` characters of extractable text, guiding the user that scanned image PDFs require OCR.
+- **Scanned PDF OCR**: Detects image-only PDFs and runs English OCR locally in the browser for up to 10 pages.
 - **Grounded Verification**: Analyzes each generated concept's `sourceExcerpt` against the source text to ensure the model did not hallucinate citations.
-- **Safe Transmission**: Notes are never sent in the background; they are only sent when the user explicitly clicks **"Generate Knowledge Map"**.
+- **Safe Transmission**: PDFs are sent to this app for text extraction. OCR runs in the browser, and extracted notes are sent to Gemini only when the user explicitly clicks **"Generate Knowledge Map"**.
 
 ---
 

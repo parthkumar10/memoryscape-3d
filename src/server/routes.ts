@@ -22,15 +22,19 @@ apiRouter.get('/status', (req: Request, res: Response) => {
 // Extract text from uploaded PDF
 apiRouter.post('/extract-pdf', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { base64, filename } = req.body;
-    if (!base64) {
+    const base64 = req.body?.base64;
+    if (!Buffer.isBuffer(req.body) && (typeof base64 !== 'string' || !base64)) {
       res.status(400).json({ error: 'Missing base64 PDF payload' });
       return;
     }
 
-    const buffer = Buffer.from(base64, 'base64');
-    if (buffer.length > 10 * 1024 * 1024) {
-      res.status(400).json({ error: 'PDF file exceeds the 10MB limit.' });
+    const buffer = Buffer.isBuffer(req.body) ? req.body : Buffer.from(base64, 'base64');
+    if (buffer.length > 4_200_000) {
+      res.status(413).json({ error: 'PDF file exceeds the 4.2 MB live upload limit.' });
+      return;
+    }
+    if (buffer.subarray(0, 5).toString('ascii') !== '%PDF-') {
+      res.status(400).json({ error: 'The uploaded file is not a readable PDF.' });
       return;
     }
 
@@ -38,7 +42,10 @@ apiRouter.post('/extract-pdf', async (req: Request, res: Response): Promise<void
     res.json(result);
   } catch (err: any) {
     console.error('PDF extraction error:', err);
-    res.status(500).json({
+    const status = err instanceof Error && err.message.startsWith('PDFs must contain 25 pages or fewer')
+      ? 413
+      : 500;
+    res.status(status).json({
       error: `Failed to extract text from PDF: ${err.message || 'Corrupt or unreadable PDF'}`,
     });
   }
@@ -185,6 +192,8 @@ apiRouter.post('/chat', async (req: Request, res: Response): Promise<void> => {
       friendly = 'The Gemini AI service is temporarily experiencing high traffic (503). Please try sending your message again in a moment.';
     } else if (raw.includes('429') || raw.includes('RESOURCE_EXHAUSTED')) {
       friendly = 'The API rate limit was reached (429). Please wait a few seconds before asking another question.';
+    } else if (raw.includes('504') || raw.includes('DEADLINE_EXCEEDED') || raw.toLowerCase().includes('deadline')) {
+      friendly = 'Gemini took too long to respond. Your message was retried—please try again or shorten your question.';
     } else if (raw.includes('GEMINI_API_KEY')) {
       friendly = 'Gemini API Key is not configured. Please add GEMINI_API_KEY in your environment or Settings > Secrets.';
     }

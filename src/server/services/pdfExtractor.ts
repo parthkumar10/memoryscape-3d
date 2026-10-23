@@ -23,68 +23,75 @@ export async function extractTextFromPdfBuffer(buffer: Buffer): Promise<Extracte
     useSystemFonts: true,
   });
 
-  const pdfDocument = await loadingTask.promise;
-  const numPages = Math.min(pdfDocument.numPages, 25); // cap at 25 pages
-  const paragraphs: SourceParagraph[] = [];
-  const fullTextParts: string[] = [];
+  let pdfDocument: Awaited<typeof loadingTask.promise> | null = null;
+  try {
+    pdfDocument = await loadingTask.promise;
+    if (pdfDocument.numPages > 25) {
+      throw new Error('PDFs must contain 25 pages or fewer. Please upload a shorter section.');
+    }
 
-  let totalChars = 0;
+    const numPages = pdfDocument.numPages;
+    const paragraphs: SourceParagraph[] = [];
+    const fullTextParts: string[] = [];
 
-  for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-    const page = await pdfDocument.getPage(pageNum);
-    const textContent = await page.getTextContent();
+    let totalChars = 0;
 
-    // Group text items by vertical lines or reasonable line breaks
-    let pageText = '';
-    let lastY: number | null = null;
+    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+      const page = await pdfDocument.getPage(pageNum);
+      const textContent = await page.getTextContent();
 
-    for (const item of textContent.items as any[]) {
-      if ('str' in item) {
-        const str = item.str;
-        if (!str) continue;
+      let pageText = '';
+      let lastY: number | null = null;
 
-        // detect new line based on transform Y position
-        if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
-          pageText += '\n';
-        } else if (pageText.length > 0 && !pageText.endsWith(' ') && !pageText.endsWith('\n')) {
-          pageText += ' ';
+      for (const item of textContent.items as any[]) {
+        if ('str' in item) {
+          const str = item.str;
+          if (!str) continue;
+
+          if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
+            pageText += '\n';
+          } else if (pageText.length > 0 && !pageText.endsWith(' ') && !pageText.endsWith('\n')) {
+            pageText += ' ';
+          }
+
+          pageText += str;
+          lastY = item.transform[5];
         }
+      }
 
-        pageText += str;
-        lastY = item.transform[5];
+      const rawBlocks = pageText
+        .split(/\n\s*\n/)
+        .map((block) => block.trim())
+        .filter((block) => block.length > 0);
+
+      let paragraphNumber = 1;
+      for (const block of rawBlocks) {
+        totalChars += block.length;
+        const ref = `Page ${pageNum}, ¶${paragraphNumber}`;
+        paragraphs.push({
+          id: `p-${pageNum}-${paragraphNumber}`,
+          ref,
+          text: block,
+        });
+        fullTextParts.push(`[${ref}]\n${block}`);
+        paragraphNumber += 1;
       }
     }
 
-    const rawBlocks = pageText
-      .split(/\n\s*\n/)
-      .map((b) => b.trim())
-      .filter((b) => b.length > 0);
+    const isScanned = totalChars < 40 && numPages > 0;
+    const warning = isScanned
+      ? 'This PDF appears to be scanned. English OCR will run in your browser for up to 10 pages.'
+      : undefined;
 
-    let paraIndex = 1;
-    for (const block of rawBlocks) {
-      totalChars += block.length;
-      const ref = `Page ${pageNum}, ¶${paraIndex++}`;
-      paragraphs.push({
-        id: `p-${pageNum}-${paraIndex}`,
-        ref,
-        text: block,
-      });
-      fullTextParts.push(`[${ref}]\n${block}`);
-    }
+    return {
+      fullText: fullTextParts.join('\n\n'),
+      paragraphs,
+      pageCount: pdfDocument.numPages,
+      isScanned,
+      characterCount: totalChars,
+      warning,
+    };
+  } finally {
+    await loadingTask.destroy();
   }
-
-  // Detect scanned / image-only PDF
-  const isScanned = totalChars < 40 && numPages > 0;
-  const warning = isScanned
-    ? 'This PDF appears to be a scanned image with no embedded text layer. Scanned documents require OCR. Please paste your text directly or export as a searchable PDF.'
-    : undefined;
-
-  return {
-    fullText: fullTextParts.join('\n\n'),
-    paragraphs,
-    pageCount: pdfDocument.numPages,
-    isScanned,
-    characterCount: totalChars,
-    warning,
-  };
 }

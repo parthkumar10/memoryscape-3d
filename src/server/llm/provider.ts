@@ -192,7 +192,9 @@ OUTPUT FORMAT: Return raw JSON adhering to the specified schema.`;
             errStr.includes('UNAVAILABLE') ||
             errStr.includes('RESOURCE_EXHAUSTED') ||
             errStr.includes('high demand') ||
-            errStr.includes('fetch failed');
+            errStr.includes('fetch failed') ||
+            errStr.includes('ECONNRESET') ||
+            errStr.includes('ETIMEDOUT');
 
           if (!isTransient || attempt >= maxRetries) {
             console.error(`[GeminiLLMProvider] Final failure after attempt ${attempt}/${maxRetries} on model ${targetModel}:`, errStr);
@@ -325,7 +327,9 @@ ${contextInfo || 'Exploring knowledge map.'}`;
           errStr.includes('UNAVAILABLE') ||
           errStr.includes('RESOURCE_EXHAUSTED') ||
           errStr.includes('high demand') ||
-          errStr.includes('fetch failed');
+          errStr.includes('fetch failed') ||
+          errStr.includes('ECONNRESET') ||
+          errStr.includes('ETIMEDOUT');
 
         if (!isTransient || attempt >= maxRetries) {
           console.error(`[GeminiLLMProvider.chatWithTutor] Error after attempt ${attempt}/${maxRetries}:`, errStr);

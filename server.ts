@@ -43,7 +43,8 @@ async function startServer() {
     next();
   });
 
-  // Parse JSON payloads (supports base64 PDFs up to 15MB)
+  // Parse raw PDF uploads before JSON payloads.
+  app.use('/api/extract-pdf', express.raw({ type: 'application/pdf', limit: '4.2mb' }));
   app.use(express.json({ limit: '15mb' }));
   app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 

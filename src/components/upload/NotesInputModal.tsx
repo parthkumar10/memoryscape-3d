@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { KnowledgeMap } from '../../types';
 import { apiUrl } from '../../utils/api';
+import { extractPdfTextWithOcr, OcrProgress } from '../../utils/pdfOcr';
 
 interface NotesInputModalProps {
   onClose: () => void;
@@ -31,10 +32,13 @@ export const NotesInputModal: React.FC<NotesInputModalProps> = ({
   const [customTitle, setCustomTitle] = useState('');
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [isExtractingPdf, setIsExtractingPdf] = useState(false);
+  const [isOcrRunning, setIsOcrRunning] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState<OcrProgress | null>(null);
   const [extractedPdfData, setExtractedPdfData] = useState<{
     text: string;
     pageCount: number;
     isScanned: boolean;
+    ocrApplied?: boolean;
     warning?: string;
   } | null>(null);
 
@@ -45,64 +49,66 @@ export const NotesInputModal: React.FC<NotesInputModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (file: File) => {
-    if (file.type !== 'application/pdf') {
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
       setErrorMessage('Please select a valid .pdf file.');
       return;
     }
-    if (file.size > 3 * 1024 * 1024) {
-      setErrorMessage('File size exceeds the 3MB limit for the live app. Please upload a smaller document.');
+    if (file.size > 4_200_000) {
+      setErrorMessage('File size exceeds the 4.2 MB live upload limit. Please compress the PDF or upload a shorter section.');
       return;
     }
 
     setPdfFile(file);
     setErrorMessage(null);
     setExtractedPdfData(null);
+    setOcrProgress(null);
     setIsExtractingPdf(true);
 
     try {
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          if (typeof reader.result !== 'string') {
-            reject(new Error('The selected PDF could not be read.'));
-            return;
-          }
-          const payload = reader.result.split(',')[1];
-          if (!payload) {
-            reject(new Error('The selected PDF could not be read.'));
-            return;
-          }
-          resolve(payload);
-        };
-        reader.onerror = () => reject(reader.error || new Error('Failed to read the selected PDF.'));
-        reader.onabort = () => reject(new Error('Reading the selected PDF was cancelled.'));
-        reader.readAsDataURL(file);
-      });
-
       const res = await fetch(apiUrl('/api/extract-pdf'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ base64, filename: file.name }),
+        headers: { 'Content-Type': 'application/pdf' },
+        body: file,
       });
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to extract text from PDF');
+        throw new Error(data.error || `Failed to extract text from PDF (HTTP ${res.status}).`);
       }
 
-      setExtractedPdfData({
+      const extracted = {
         text: data.fullText,
         pageCount: data.pageCount,
         isScanned: data.isScanned,
         warning: data.warning,
-      });
+      };
+      setExtractedPdfData(extracted);
+      setIsExtractingPdf(false);
+
+      if (data.isScanned) {
+        setIsOcrRunning(true);
+        const ocrResult = await extractPdfTextWithOcr(file, setOcrProgress);
+        setExtractedPdfData({
+          text: ocrResult.fullText,
+          pageCount: ocrResult.pageCount,
+          isScanned: true,
+          ocrApplied: true,
+          warning: ocrResult.warning,
+        });
+      }
+
       if (!customTitle) {
         setCustomTitle(file.name.replace(/\.pdf$/i, ''));
       }
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : 'Error processing PDF');
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : 'Could not process the PDF. Please try a clearer, smaller PDF or paste the notes instead.'
+      );
     } finally {
       setIsExtractingPdf(false);
+      setIsOcrRunning(false);
     }
   };
 
@@ -124,26 +130,32 @@ export const NotesInputModal: React.FC<NotesInputModalProps> = ({
     setGenerationStep('Analyzing study notes structure...');
 
     try {
-      setTimeout(() => setGenerationStep('Extracting core concepts and source citations...'), 1200);
-      setTimeout(() => setGenerationStep('Mapping relationships and generating diagnostic quiz...'), 2800);
+      const progressTimers = [
+        window.setTimeout(() => setGenerationStep('Extracting core concepts and source citations...'), 1200),
+        window.setTimeout(() => setGenerationStep('Mapping relationships and generating diagnostic quiz...'), 2800),
+      ];
 
-      const res = await fetch(apiUrl('/api/generate-map'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          notesText: sourceText,
-          customTitle: customTitle.trim() || undefined,
-          sourceType: activeTab === 'pdf' ? 'custom-pdf' : 'custom-pasted',
-        }),
-      });
+      try {
+        const res = await fetch(apiUrl('/api/generate-map'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            notesText: sourceText,
+            customTitle: customTitle.trim() || undefined,
+            sourceType: activeTab === 'pdf' ? 'custom-pdf' : 'custom-pasted',
+          }),
+        });
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to generate knowledge map');
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || `Failed to generate knowledge map (HTTP ${res.status}).`);
+        }
+
+        onMapGenerated(data);
+        onClose();
+      } finally {
+        progressTimers.forEach(window.clearTimeout);
       }
-
-      onMapGenerated(data);
-      onClose();
     } catch (err: any) {
       console.error(err);
       setErrorMessage(err.message || 'Generation failed. Please try again.');
@@ -174,7 +186,7 @@ export const NotesInputModal: React.FC<NotesInputModalProps> = ({
 
           <button
             onClick={onClose}
-            disabled={isGenerating}
+            disabled={isGenerating || isExtractingPdf || isOcrRunning}
             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 disabled:opacity-40"
           >
             <X className="w-5 h-5" />
@@ -190,7 +202,7 @@ export const NotesInputModal: React.FC<NotesInputModalProps> = ({
               <div>
                 <strong className="block text-amber-300 font-semibold">Gemini API Key Required for Custom Notes</strong>
                 <span className="text-amber-200/90 leading-relaxed">
-                  Generating a map from your own notes requires a Gemini API key. Add <code className="font-mono bg-amber-950 px-1 py-0.5 rounded text-amber-300">GEMINI_API_KEY</code> to your environment file. Meanwhile, the complete Java OOP sample map is fully interactive without an API key.
+                  Generating a map from your own notes requires a Gemini API key. Add <code className="font-mono bg-amber-950 px-1 py-0.5 rounded text-amber-300">GEMINI_API_KEY</code> in Vercel Project Settings → Environment Variables. Keep it server-side; the complete Java OOP sample map works without an API key.
                 </span>
               </div>
             </div>
@@ -232,7 +244,7 @@ export const NotesInputModal: React.FC<NotesInputModalProps> = ({
               }`}
             >
               <Upload className="w-3.5 h-3.5" />
-              <span>Upload Text PDF</span>
+              <span>Upload PDF</span>
             </button>
           </div>
 
@@ -277,6 +289,7 @@ export const NotesInputModal: React.FC<NotesInputModalProps> = ({
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
+                  e.target.value = '';
                   if (f) handleFileChange(f);
                 }}
               />
@@ -287,17 +300,38 @@ export const NotesInputModal: React.FC<NotesInputModalProps> = ({
               >
                 <Upload className="w-8 h-8 text-slate-500 group-hover:text-cyan-400 mx-auto mb-2 transition-colors" />
                 <p className="text-xs font-semibold text-slate-200">
-                  {pdfFile ? pdfFile.name : 'Click to select or drop a text-based PDF'}
+                  {pdfFile ? pdfFile.name : 'Click to select a text-based or scanned PDF'}
                 </p>
                 <p className="text-[11px] text-slate-400 mt-1">
-                  Supports digital PDFs with selectable text (up to 3MB, max 25 pages)
+                  Up to 4.2 MB and 25 pages. Scanned PDF OCR runs locally in English for the first 10 pages.
                 </p>
               </div>
 
               {isExtractingPdf && (
                 <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-2 text-xs text-cyan-300 font-sans">
                   <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
-                  <span>Extracting text & preserving source references...</span>
+                  <span>Reading PDF text and preserving page references...</span>
+                </div>
+              )}
+
+              {isOcrRunning && (
+                <div className="p-3 rounded-xl bg-slate-900 border border-cyan-500/30 space-y-2 text-xs text-cyan-200 font-sans">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-cyan-400 shrink-0" />
+                    <span>
+                      Recognizing scanned text locally · page {ocrProgress?.page ?? 1} of {ocrProgress?.totalPages ?? 10}
+                      {ocrProgress ? ` · ${ocrProgress.percent}%` : ''}
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                    <div
+                      className="h-full bg-cyan-400 transition-[width] duration-300"
+                      style={{ width: `${ocrProgress?.percent ?? 0}%` }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    OCR runs in your browser. The PDF is not sent to the OCR service; the OCR engine and English language model are downloaded from a public CDN.
+                  </p>
                 </div>
               )}
 
@@ -308,10 +342,19 @@ export const NotesInputModal: React.FC<NotesInputModalProps> = ({
                     <span>Characters: {extractedPdfData.text.length.toLocaleString()}</span>
                   </div>
 
-                  {extractedPdfData.isScanned && (
+                  {extractedPdfData.isScanned && !extractedPdfData.ocrApplied && (
                     <div className="p-2.5 rounded-lg bg-red-950/40 border border-red-500/30 text-red-300 flex items-start gap-2">
                       <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
                       <span>{extractedPdfData.warning}</span>
+                    </div>
+                  )}
+                  {extractedPdfData.ocrApplied && (
+                    <div className="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-200 flex items-start gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <span>
+                        Scanned text recognized locally.
+                        {extractedPdfData.warning ? ` ${extractedPdfData.warning}` : ''}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -325,7 +368,7 @@ export const NotesInputModal: React.FC<NotesInputModalProps> = ({
             <div>
               <strong className="text-slate-300 block font-semibold">Privacy & Grounding Note</strong>
               <span className="leading-relaxed">
-                Your notes are only transmitted when generating the map. All concept explanations link directly back to your source text to prevent AI hallucinations.
+                The PDF is sent to this app's API for text extraction. Scanned-page OCR runs in your browser; its engine and English model download from a public CDN, but PDF pages are not uploaded to that CDN. Extracted notes are sent to Gemini only when you generate the map.
               </span>
             </div>
           </div>
@@ -362,7 +405,7 @@ export const NotesInputModal: React.FC<NotesInputModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            disabled={isGenerating}
+            disabled={isGenerating || isExtractingPdf || isOcrRunning}
             className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-xs text-slate-400 hover:text-slate-200 transition-colors font-medium"
           >
             Cancel
@@ -371,7 +414,7 @@ export const NotesInputModal: React.FC<NotesInputModalProps> = ({
           <button
             type="button"
             onClick={handleGenerate}
-            disabled={isGenerating || activeCharCount < 50}
+            disabled={isGenerating || isExtractingPdf || isOcrRunning || activeCharCount < 50}
             className="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 disabled:opacity-40 text-slate-950 font-semibold text-xs flex items-center gap-2 transition-colors shadow-md"
           >
             {isGenerating ? (

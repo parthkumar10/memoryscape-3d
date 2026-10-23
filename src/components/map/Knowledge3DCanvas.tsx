@@ -953,12 +953,14 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
 
     // 10. Animation Loop with Pre-Allocated Scratch Math & Exponential Damping
     let animationFrameId = 0;
-    const clock = new THREE.Clock();
+    const timer = new THREE.Timer();
+    timer.connect(document);
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
-      const delta = clock.getDelta();
-      const elapsedTime = clock.getElapsedTime();
+      timer.update();
+      const delta = timer.getDelta();
+      const elapsedTime = timer.getElapsed();
 
       // Respect reduced motion: subtle floating if allowed
       if (!prefersReducedMotion) {
@@ -1020,6 +1022,7 @@ export const Knowledge3DCanvas: React.FC<Knowledge3DCanvasProps> = ({
       controls.removeEventListener('change', updateCoordsThrottled);
       controls.removeEventListener('end', flushCoords);
       controls.dispose();
+      timer.dispose();
       renderer.dispose();
       gridHelper.dispose();
       contactShadowTexture.dispose();
