@@ -11,6 +11,13 @@ interface ChatMessage {
   conceptTag?: string;
 }
 
+const createWelcomeMessage = (mapTitle: string): ChatMessage => ({
+  id: 'welcome-1',
+  role: 'model',
+  text: `Hello! I'm your **Gemini Socratic Tutor** for **${mapTitle}**.\n\nI can explain concepts, walk through prerequisite relationships, analyze your revision notes, or quiz you on specific ideas. What would you like to explore?`,
+  timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+});
+
 interface GeminiChatbotProps {
   map: KnowledgeMap;
   selectedConcept: Concept | null;
@@ -28,16 +35,13 @@ export const GeminiChatbot: React.FC<GeminiChatbotProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    return [
-      {
-        id: 'welcome-1',
-        role: 'model',
-        text: `Hello! I'm your **Gemini Socratic Tutor** for **${map.title}**.\n\nI can explain concepts, walk through prerequisite relationships, analyze your revision notes, or quiz you on specific ideas. What would you like to explore?`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      },
-    ];
-  });
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [createWelcomeMessage(map.title)]);
+
+  useEffect(() => {
+    setMessages([createWelcomeMessage(map.title)]);
+    setErrorMessage(null);
+    setInput('');
+  }, [map.id, map.title]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
