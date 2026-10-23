@@ -6,6 +6,27 @@ MEMORYSCAPE is an interactive learning web application that transforms lecture n
 
 ---
 
+
+## ✨ Features
+
+- Explore a prepared Java OOP knowledge map in an interactive Three.js 3D view, or switch to a 2D list view.
+- Select concepts to review explanations, examples, relationships, and verified excerpts linked to their source notes.
+- Upload pasted notes or a PDF to generate a custom concept map, grounded citations, and a five-question quiz with Gemini.
+- Extract searchable PDF text on the server, or recognize scanned English text locally in the browser with OCR progress feedback.
+- Ask the Gemini tutor follow-up questions with map and concept context.
+- Take a diagnostic quiz, record confidence, review results, and follow a targeted revision path.
+- Use the guided 3D tour, Study Sheet, search, mastery view, custom concept editing, and optional study sounds.
+- Keep the sample map and local study state available without configuring an API key.
+
+### PDF and AI limits
+
+- PDF file size: **4.2 MB maximum**; document length: **25 pages maximum**.
+- Scanned PDF OCR: English, first **10 pages**. OCR is CPU-intensive and may take longer on mobile devices.
+- Gemini features depend on API key validity, model availability, network connectivity, and Google AI Studio quotas.
+- Generated maps are limited to notes the app can process; extracted text is capped at 40,000 characters in the UI.
+
+---
+
 ## 🏛️ System Architecture
 
 - **Client Frontend**: React 19 SPA running on Vite, styled with Tailwind CSS v4 and Lucide icons.
@@ -88,25 +109,6 @@ The sample map works without a Gemini key. Custom note generation and AI chat re
 
 ---
 
-## ✨ Features
-
-- Explore a prepared Java OOP knowledge map in an interactive Three.js 3D view, or switch to a 2D list view.
-- Select concepts to review explanations, examples, relationships, and verified excerpts linked to their source notes.
-- Upload pasted notes or a PDF to generate a custom concept map, grounded citations, and a five-question quiz with Gemini.
-- Extract searchable PDF text on the server, or recognize scanned English text locally in the browser with OCR progress feedback.
-- Ask the Gemini tutor follow-up questions with map and concept context.
-- Take a diagnostic quiz, record confidence, review results, and follow a targeted revision path.
-- Use the guided 3D tour, Study Sheet, search, mastery view, custom concept editing, and optional study sounds.
-- Keep the sample map and local study state available without configuring an API key.
-
-### PDF and AI limits
-
-- PDF file size: **4.2 MB maximum**; document length: **25 pages maximum**.
-- Scanned PDF OCR: English, first **10 pages**. OCR is CPU-intensive and may take longer on mobile devices.
-- Gemini features depend on API key validity, model availability, network connectivity, and Google AI Studio quotas.
-- Generated maps are limited to notes the app can process; extracted text is capped at 40,000 characters in the UI.
-
----
 
 ## 🛡️ Privacy & Grounding Guarantees
 
