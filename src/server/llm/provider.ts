@@ -315,8 +315,12 @@ ${contextInfo || 'Exploring knowledge map.'}`;
         const isTransient =
           err?.status === 503 ||
           err?.status === 429 ||
+          err?.status === 504 ||
           errStr.includes('503') ||
           errStr.includes('429') ||
+          errStr.includes('504') ||
+          errStr.includes('DEADLINE_EXCEEDED') ||
+          errStr.toLowerCase().includes('deadline') ||
           errStr.includes('overloaded') ||
           errStr.includes('UNAVAILABLE') ||
           errStr.includes('RESOURCE_EXHAUSTED') ||
