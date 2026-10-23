@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, MessageSquare, Send, X, Minimize2, Maximize2, RotateCcw, AlertCircle, Bot, User, Lightbulb, ChevronRight } from 'lucide-react';
 import { Concept, KnowledgeMap } from '../../types';
+import { apiUrl } from '../../utils/api';
 
 interface ChatMessage {
   id: string;
@@ -88,7 +89,7 @@ export const GeminiChatbot: React.FC<GeminiChatbotProps> = ({
           parts: [{ text: m.text }],
         }));
 
-      const res = await fetch('/api/chat', {
+      const res = await fetch(apiUrl('/api/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

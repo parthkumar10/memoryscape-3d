@@ -12,6 +12,36 @@ const __dirname = path.dirname(__filename);
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
+  const configuredOrigins = (process.env.FRONTEND_URL || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  const allowedOrigins =
+    process.env.NODE_ENV === 'production'
+      ? configuredOrigins
+      : [...configuredOrigins, `http://localhost:${PORT}`, `http://127.0.0.1:${PORT}`];
+
+  app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (origin) {
+      if (!allowedOrigins.includes(origin)) {
+        res.status(403).json({ error: 'This website is not allowed to access the API.' });
+        return;
+      }
+
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      res.vary('Origin');
+    }
+
+    if (req.method === 'OPTIONS') {
+      res.sendStatus(204);
+      return;
+    }
+
+    next();
+  });
 
   // Parse JSON payloads (supports base64 PDFs up to 15MB)
   app.use(express.json({ limit: '15mb' }));

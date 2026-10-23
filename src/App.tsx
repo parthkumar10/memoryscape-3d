@@ -20,6 +20,7 @@ import { CheatSheetModal } from './components/export/CheatSheetModal';
 import { AddConceptIslandModal } from './components/map/AddConceptIslandModal';
 import { DemoWalkthroughBar } from './components/navigation/DemoWalkthroughBar';
 import { Sparkles, Compass, Upload, CheckCircle2, BookOpen, Layers, ArrowRight } from 'lucide-react';
+import { apiUrl } from './utils/api';
 
 const STORAGE_KEY = 'memoryscape_current_map';
 
@@ -76,7 +77,7 @@ export default function App() {
 
   // Check backend server status
   useEffect(() => {
-    fetch('/api/status')
+    fetch(apiUrl('/api/status'))
       .then((res) => res.json())
       .then((data) => {
         setHasApiKey(!!data.hasGeminiKey);

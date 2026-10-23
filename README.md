@@ -53,6 +53,30 @@ Visit [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
+## ☁️ Deploy the full app (Vercel + Render)
+
+Vercel hosts the Vite frontend; Render runs the Express API and keeps `GEMINI_API_KEY` on the server. Do not add the Gemini key as a `VITE_` variable or commit it to Git.
+
+### Render API
+
+Create a Node Web Service from this repository in Render. Use the repository root, set the build command to `npm install --include=dev && npm run build`, and the start command to `npm start`. Add these environment variables in the Render service settings:
+
+- `NODE_ENV` = `production`
+- `GEMINI_API_KEY` = a newly generated Google AI Studio key
+- `FRONTEND_URL` = the exact public Vercel origin, for example `https://your-project.vercel.app` (no trailing slash)
+
+After the service is live, copy its base URL, for example `https://your-api.onrender.com`.
+
+### Vercel frontend
+
+In the Vercel project settings, set the root directory to the repository root, build command to `npm run build`, and output directory to `dist`. Add this environment variable for Production:
+
+- `VITE_API_URL` = the Render service base URL, for example `https://your-api.onrender.com` (no trailing slash)
+
+Redeploy the Vercel project after setting the variable. The demo can be explored without a Gemini key; custom note generation and AI chat need the Render API and a valid key.
+
+---
+
 ## 🎯 Demo vs. AI Functionality
 
 ### 1. Deterministic Java OOP Demo (No API Key Required)

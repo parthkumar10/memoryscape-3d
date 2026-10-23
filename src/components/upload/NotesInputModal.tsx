@@ -13,6 +13,7 @@ import {
   Info,
 } from 'lucide-react';
 import { KnowledgeMap } from '../../types';
+import { apiUrl } from '../../utils/api';
 
 interface NotesInputModalProps {
   onClose: () => void;
@@ -78,7 +79,7 @@ export const NotesInputModal: React.FC<NotesInputModalProps> = ({
         reader.readAsDataURL(file);
       });
 
-      const res = await fetch('/api/extract-pdf', {
+      const res = await fetch(apiUrl('/api/extract-pdf'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ base64, filename: file.name }),
@@ -126,7 +127,7 @@ export const NotesInputModal: React.FC<NotesInputModalProps> = ({
       setTimeout(() => setGenerationStep('Extracting core concepts and source citations...'), 1200);
       setTimeout(() => setGenerationStep('Mapping relationships and generating diagnostic quiz...'), 2800);
 
-      const res = await fetch('/api/generate-map', {
+      const res = await fetch(apiUrl('/api/generate-map'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
