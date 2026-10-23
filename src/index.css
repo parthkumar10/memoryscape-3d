@@ -1,15 +1,44 @@
 @import "tailwindcss";
 
 @layer base {
+  :root {
+    color-scheme: dark;
+    background: #070b14;
+  }
+
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-    background-color: #070b14;
+    background:
+      radial-gradient(circle at top, rgba(14, 116, 144, 0.22), transparent 26%),
+      radial-gradient(circle at bottom right, rgba(168, 85, 247, 0.14), transparent 24%),
+      #070b14;
     color: #e2e8f0;
   }
-  
+
+  #root {
+    min-height: 100vh;
+    background: transparent;
+  }
+
   code, pre, .font-mono {
     font-family: 'JetBrains Mono', monospace;
   }
+}
+
+.app-shell {
+  background:
+    linear-gradient(135deg, rgba(7, 11, 20, 0.72), rgba(15, 23, 42, 0.92));
+}
+
+.app-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgba(148, 163, 184, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+  pointer-events: none;
 }
 
 /* Custom scrollbars */

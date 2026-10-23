@@ -202,7 +202,7 @@ export default function App() {
   const selectedConcept = map.concepts.find((c) => c.id === selectedConceptId) || null;
 
   return (
-    <div className="w-full h-screen bg-[#070b14] text-slate-100 flex flex-col overflow-hidden font-sans select-none">
+    <div className="app-shell w-full h-screen text-slate-100 flex flex-col overflow-hidden font-sans select-none relative">
       {/* Top Header Bar (Shown in 2D List Mode; In 3D Mode, the floating controls bar on canvas provides the sleek full-screen view) */}
       {viewMode === '2d' && (
         <TopBar
@@ -303,16 +303,16 @@ export default function App() {
       {/* Onboarding Welcome Modal */}
       {showWelcomeBanner && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#0b1120] border border-slate-700/80 rounded-2xl w-full max-w-lg p-6 sm:p-7 text-slate-100 shadow-2xl space-y-5 animate-in fade-in zoom-in-95">
+          <div className="bg-slate-950/75 border border-cyan-500/20 rounded-[28px] w-full max-w-lg p-6 sm:p-7 text-slate-100 shadow-[0_30px_80px_rgba(14,116,144,0.35)] backdrop-blur-xl space-y-5 animate-in fade-in zoom-in-95">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-violet-500 flex items-center justify-center text-slate-950 font-bold shadow-lg shadow-cyan-500/20">
                 <Compass className="w-5 h-5 text-slate-950" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-slate-100 tracking-tight">
+                <h1 className="text-2xl sm:text-[1.75rem] font-black text-white tracking-[0.18em] leading-none drop-shadow-[0_0_18px_rgba(34,211,238,0.35)]">
                   MEMORYSCAPE
                 </h1>
-                <p className="text-xs text-cyan-400 font-medium">
+                <p className="text-xs sm:text-sm text-cyan-300 font-medium mt-1 tracking-[0.08em] uppercase">
                   Interactive Concept Map & Active Revision
                 </p>
               </div>
@@ -349,7 +349,7 @@ export default function App() {
                   setShowWelcomeBanner(false);
                   localStorage.setItem('memoryscape_onboarded', 'true');
                 }}
-                className="flex-1 py-3 px-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-sm rounded-xl transition-all shadow-md shadow-cyan-500/20 flex items-center justify-center gap-2 active:scale-98"
+                className="flex-1 py-3 px-4 bg-gradient-to-r from-cyan-400 via-sky-500 to-violet-500 hover:brightness-110 text-slate-950 font-semibold text-sm rounded-xl transition-all shadow-[0_12px_32px_rgba(56,189,248,0.35)] flex items-center justify-center gap-2 active:scale-[0.98]"
               >
                 <span>Explore sample map</span>
                 <ArrowRight className="w-4 h-4" />
@@ -361,7 +361,7 @@ export default function App() {
                   localStorage.setItem('memoryscape_onboarded', 'true');
                   setIsUploadOpen(true);
                 }}
-                className="flex-1 py-3 px-4 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-200 font-medium text-sm rounded-xl transition-all flex items-center justify-center gap-2"
+                className="flex-1 py-3 px-4 bg-slate-900/70 hover:bg-slate-800/90 border border-slate-700/80 hover:border-cyan-400/40 text-slate-200 font-medium text-sm rounded-xl transition-all flex items-center justify-center gap-2"
               >
                 <Upload className="w-4 h-4 text-slate-400" />
                 <span>Upload notes</span>
